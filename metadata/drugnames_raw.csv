@@ -1,0 +1,226 @@
+,original_drugname,dataset
+0,Navitoclax,McFarlandTshemiak2020_all_expts_combined
+1,BRD3379,McFarlandTshemiak2020_all_expts_combined
+2,AZD5591,McFarlandTshemiak2020_all_expts_combined
+3,Taselisib,McFarlandTshemiak2020_all_expts_combined
+4,Everolimus,McFarlandTshemiak2020_all_expts_combined
+5,Idasanutlin,McFarlandTshemiak2020_all_expts_combined
+6,Bortezomib,McFarlandTshemiak2020_all_expts_combined
+7,Trametinib,McFarlandTshemiak2020_all_expts_combined
+8,Afatinib,McFarlandTshemiak2020_all_expts_combined
+9,Dabrafenib,McFarlandTshemiak2020_all_expts_combined
+10,Gemcitabine,McFarlandTshemiak2020_all_expts_combined
+11,JQ1,McFarlandTshemiak2020_all_expts_combined
+12,Prexasertib,McFarlandTshemiak2020_all_expts_combined
+13,Dex,SrivatsanTrapnell2020_sciplex2
+14,Nutlin,SrivatsanTrapnell2020_sciplex2
+15,BMS,SrivatsanTrapnell2020_sciplex2
+16,SAHA,SrivatsanTrapnell2020_sciplex2
+17,TAK-901,SrivatsanTrapnell2020_sciplex3
+18,AG-490 (Tyrphostin B42),SrivatsanTrapnell2020_sciplex3
+19,Abexinostat (PCI-24781),SrivatsanTrapnell2020_sciplex3
+20,Alisertib (MLN8237),SrivatsanTrapnell2020_sciplex3
+21,Busulfan ,SrivatsanTrapnell2020_sciplex3
+22,Obatoclax Mesylate (GX15-070),SrivatsanTrapnell2020_sciplex3
+23,Enzastaurin (LY317615),SrivatsanTrapnell2020_sciplex3
+24,BMS-265246,SrivatsanTrapnell2020_sciplex3
+25,UNC0379,SrivatsanTrapnell2020_sciplex3
+26,Raltitrexed,SrivatsanTrapnell2020_sciplex3
+27,Tubastatin A HCl,SrivatsanTrapnell2020_sciplex3
+28,BMS-536924,SrivatsanTrapnell2020_sciplex3
+29,AG-14361,SrivatsanTrapnell2020_sciplex3
+30,SRT3025 HCl,SrivatsanTrapnell2020_sciplex3
+31,Iniparib (BSI-201),SrivatsanTrapnell2020_sciplex3
+32,Lenalidomide (CC-5013),SrivatsanTrapnell2020_sciplex3
+33,Divalproex Sodium,SrivatsanTrapnell2020_sciplex3
+34,BMS-911543,SrivatsanTrapnell2020_sciplex3
+35,Carmofur,SrivatsanTrapnell2020_sciplex3
+36,Selisistat (EX 527),SrivatsanTrapnell2020_sciplex3
+37,PJ34,SrivatsanTrapnell2020_sciplex3
+38,Pirarubicin,SrivatsanTrapnell2020_sciplex3
+39,MLN8054,SrivatsanTrapnell2020_sciplex3
+40,Maraviroc,SrivatsanTrapnell2020_sciplex3
+41,Tanespimycin (17-AAG),SrivatsanTrapnell2020_sciplex3
+42,Roxadustat (FG-4592),SrivatsanTrapnell2020_sciplex3
+43,"Patupilone (EPO906, Epothilone B)",SrivatsanTrapnell2020_sciplex3
+44,Sodium Phenylbutyrate,SrivatsanTrapnell2020_sciplex3
+45,Dacinostat (LAQ824),SrivatsanTrapnell2020_sciplex3
+46,PD98059,SrivatsanTrapnell2020_sciplex3
+47,Disulfiram ,SrivatsanTrapnell2020_sciplex3
+48,Celecoxib,SrivatsanTrapnell2020_sciplex3
+49,Linifanib (ABT-869),SrivatsanTrapnell2020_sciplex3
+50,Thalidomide,SrivatsanTrapnell2020_sciplex3
+51,SNS-314,SrivatsanTrapnell2020_sciplex3
+52,Glesatinib?(MGCD265),SrivatsanTrapnell2020_sciplex3
+53,JNJ-26854165 (Serdemetan),SrivatsanTrapnell2020_sciplex3
+54,(+)-JQ1,SrivatsanTrapnell2020_sciplex3
+55,S3I-201,SrivatsanTrapnell2020_sciplex3
+56,AZD1480,SrivatsanTrapnell2020_sciplex3
+57,Droxinostat,SrivatsanTrapnell2020_sciplex3
+58,PF-573228,SrivatsanTrapnell2020_sciplex3
+59,Momelotinib (CYT387),SrivatsanTrapnell2020_sciplex3
+60,AZ 960,SrivatsanTrapnell2020_sciplex3
+61,Hesperadin,SrivatsanTrapnell2020_sciplex3
+62,"Roscovitine (Seliciclib,CYC202)",SrivatsanTrapnell2020_sciplex3
+63,MK-5108 (VX-689),SrivatsanTrapnell2020_sciplex3
+64,Tucidinostat (Chidamide),SrivatsanTrapnell2020_sciplex3
+65,Ellagic acid,SrivatsanTrapnell2020_sciplex3
+66,PCI-34051,SrivatsanTrapnell2020_sciplex3
+67,CEP-33779,SrivatsanTrapnell2020_sciplex3
+68,Resminostat,SrivatsanTrapnell2020_sciplex3
+69,XAV-939,SrivatsanTrapnell2020_sciplex3
+70,Tie2 kinase inhibitor,SrivatsanTrapnell2020_sciplex3
+71,Nintedanib (BIBF 1120),SrivatsanTrapnell2020_sciplex3
+72,Trametinib (GSK1120212),SrivatsanTrapnell2020_sciplex3
+73,TGX-221,SrivatsanTrapnell2020_sciplex3
+74,Panobinostat (LBH589),SrivatsanTrapnell2020_sciplex3
+75,Meprednisone,SrivatsanTrapnell2020_sciplex3
+76,ENMD-2076 L-(+)-Tartaric acid ,SrivatsanTrapnell2020_sciplex3
+77,Avagacestat (BMS-708163),SrivatsanTrapnell2020_sciplex3
+78,TG101209,SrivatsanTrapnell2020_sciplex3
+79,AMG-900,SrivatsanTrapnell2020_sciplex3
+80,Fasudil (HA-1077) HCl,SrivatsanTrapnell2020_sciplex3
+81,Trichostatin A (TSA),SrivatsanTrapnell2020_sciplex3
+82,Prednisone ,SrivatsanTrapnell2020_sciplex3
+83,Crizotinib (PF-02341066),SrivatsanTrapnell2020_sciplex3
+84,Navitoclax (ABT-263),SrivatsanTrapnell2020_sciplex3
+85,EED226,SrivatsanTrapnell2020_sciplex3
+86,Barasertib (AZD1152-HQPA),SrivatsanTrapnell2020_sciplex3
+87,PHA-680632,SrivatsanTrapnell2020_sciplex3
+88,Dasatinib,SrivatsanTrapnell2020_sciplex3
+89,"Fluorouracil (5-Fluoracil, 5-FU)",SrivatsanTrapnell2020_sciplex3
+90,Quisinostat (JNJ-26481585) 2HCl,SrivatsanTrapnell2020_sciplex3
+91,"Tozasertib (VX-680, MK-0457)",SrivatsanTrapnell2020_sciplex3
+92,Gandotinib (LY2784544),SrivatsanTrapnell2020_sciplex3
+93,MC1568,SrivatsanTrapnell2020_sciplex3
+94,"Temsirolimus (CCI-779, NSC 683864)",SrivatsanTrapnell2020_sciplex3
+95,Clevudine ,SrivatsanTrapnell2020_sciplex3
+96,ABT-737,SrivatsanTrapnell2020_sciplex3
+97,SRT2104 (GSK2245840),SrivatsanTrapnell2020_sciplex3
+98,ZM 447439,SrivatsanTrapnell2020_sciplex3
+99,IOX2,SrivatsanTrapnell2020_sciplex3
+100,Belinostat (PXD101),SrivatsanTrapnell2020_sciplex3
+101,Toremifene Citrate,SrivatsanTrapnell2020_sciplex3
+102,Ruxolitinib (INCB018424),SrivatsanTrapnell2020_sciplex3
+103,Ofloxacin,SrivatsanTrapnell2020_sciplex3
+104,Bosutinib (SKI-606),SrivatsanTrapnell2020_sciplex3
+105,Regorafenib (BAY 73-4506),SrivatsanTrapnell2020_sciplex3
+106,Alendronate sodium trihydrate,SrivatsanTrapnell2020_sciplex3
+107,PF-3845,SrivatsanTrapnell2020_sciplex3
+108,Aurora A Inhibitor I,SrivatsanTrapnell2020_sciplex3
+109,UNC0631,SrivatsanTrapnell2020_sciplex3
+110,A-366,SrivatsanTrapnell2020_sciplex3
+111,Anacardic Acid,SrivatsanTrapnell2020_sciplex3
+112,Ivosidenib (AG-120),SrivatsanTrapnell2020_sciplex3
+113,WHI-P154,SrivatsanTrapnell2020_sciplex3
+114,PD173074,SrivatsanTrapnell2020_sciplex3
+115,BMS-754807,SrivatsanTrapnell2020_sciplex3
+116,Cyclocytidine HCl,SrivatsanTrapnell2020_sciplex3
+117,Quercetin,SrivatsanTrapnell2020_sciplex3
+118,Lapatinib (GW-572016) Ditosylate,SrivatsanTrapnell2020_sciplex3
+119,Mesna ,SrivatsanTrapnell2020_sciplex3
+120,KW-2449,SrivatsanTrapnell2020_sciplex3
+121,Azacitidine ,SrivatsanTrapnell2020_sciplex3
+122,Lomustine ,SrivatsanTrapnell2020_sciplex3
+123,Valproic acid sodium salt (Sodium valproate),SrivatsanTrapnell2020_sciplex3
+124,Motesanib Diphosphate (AMG-706),SrivatsanTrapnell2020_sciplex3
+125,NVP-BSK805 2HCl,SrivatsanTrapnell2020_sciplex3
+126,Resveratrol,SrivatsanTrapnell2020_sciplex3
+127,CYC116,SrivatsanTrapnell2020_sciplex3
+128,ENMD-2076,SrivatsanTrapnell2020_sciplex3
+129,Curcumin,SrivatsanTrapnell2020_sciplex3
+130,Ki8751,SrivatsanTrapnell2020_sciplex3
+131,Aminoglutethimide ,SrivatsanTrapnell2020_sciplex3
+132,GSK-LSD1 2HCl,SrivatsanTrapnell2020_sciplex3
+133,Daphnetin,SrivatsanTrapnell2020_sciplex3
+134,CUDC-101,SrivatsanTrapnell2020_sciplex3
+135,Filgotinib (GLPG0634),SrivatsanTrapnell2020_sciplex3
+136,Veliparib (ABT-888),SrivatsanTrapnell2020_sciplex3
+137,Danusertib (PHA-739358),SrivatsanTrapnell2020_sciplex3
+138,Alvespimycin (17-DMAG) HCl,SrivatsanTrapnell2020_sciplex3
+139,Sorafenib Tosylate,SrivatsanTrapnell2020_sciplex3
+140,2-Methoxyestradiol (2-MeOE2),SrivatsanTrapnell2020_sciplex3
+141,PFI-1 (PF-6405761),SrivatsanTrapnell2020_sciplex3
+142,"Baricitinib (LY3009104, INCB028050)",SrivatsanTrapnell2020_sciplex3
+143,"Fedratinib (SAR302503, TG101348)",SrivatsanTrapnell2020_sciplex3
+144,G007-LK,SrivatsanTrapnell2020_sciplex3
+145,S-Ruxolitinib (INCB018424),SrivatsanTrapnell2020_sciplex3
+146,MK-0752,SrivatsanTrapnell2020_sciplex3
+147,Tofacitinib (CP-690550) Citrate,SrivatsanTrapnell2020_sciplex3
+148,Capecitabine ,SrivatsanTrapnell2020_sciplex3
+149,SGI-1776 free base,SrivatsanTrapnell2020_sciplex3
+150,Nilotinib (AMN-107),SrivatsanTrapnell2020_sciplex3
+151,Tranylcypromine (2-PCPA) HCl,SrivatsanTrapnell2020_sciplex3
+152,Sirtinol,SrivatsanTrapnell2020_sciplex3
+153,UNC1999,SrivatsanTrapnell2020_sciplex3
+154,Decitabine,SrivatsanTrapnell2020_sciplex3
+155,AT9283,SrivatsanTrapnell2020_sciplex3
+156,BRD4770,SrivatsanTrapnell2020_sciplex3
+157,Ki16425,SrivatsanTrapnell2020_sciplex3
+158,JNJ-7706621,SrivatsanTrapnell2020_sciplex3
+159,Costunolide,SrivatsanTrapnell2020_sciplex3
+160,AICAR (Acadesine),SrivatsanTrapnell2020_sciplex3
+161,Mocetinostat (MGCD0103),SrivatsanTrapnell2020_sciplex3
+162,Bisindolylmaleimide IX (Ro 31-8220 Mesylate),SrivatsanTrapnell2020_sciplex3
+163,ITSA-1 (ITSA1),SrivatsanTrapnell2020_sciplex3
+164,Cimetidine ,SrivatsanTrapnell2020_sciplex3
+165,Triamcinolone Acetonide,SrivatsanTrapnell2020_sciplex3
+166,TMP195,SrivatsanTrapnell2020_sciplex3
+167,Flavopiridol HCl,SrivatsanTrapnell2020_sciplex3
+168,Entacapone,SrivatsanTrapnell2020_sciplex3
+169,Rigosertib (ON-01910),SrivatsanTrapnell2020_sciplex3
+170,GSK J1,SrivatsanTrapnell2020_sciplex3
+171,Fulvestrant,SrivatsanTrapnell2020_sciplex3
+172,Givinostat (ITF2357),SrivatsanTrapnell2020_sciplex3
+173,CUDC-907,SrivatsanTrapnell2020_sciplex3
+174,Vandetanib (ZD6474),SrivatsanTrapnell2020_sciplex3
+175,Amisulpride,SrivatsanTrapnell2020_sciplex3
+176,Pelitinib (EKB-569),SrivatsanTrapnell2020_sciplex3
+177,Mercaptopurine (6-MP),SrivatsanTrapnell2020_sciplex3
+178,"Rucaparib (AG-014699,PF-01367338) phosphate",SrivatsanTrapnell2020_sciplex3
+179,INO-1001 (3-Aminobenzamide),SrivatsanTrapnell2020_sciplex3
+180,"Luminespib (AUY-922, NVP-AUY922)",SrivatsanTrapnell2020_sciplex3
+181,Ramelteon,SrivatsanTrapnell2020_sciplex3
+182,Tazemetostat (EPZ-6438),SrivatsanTrapnell2020_sciplex3
+183,Streptozotocin (STZ),SrivatsanTrapnell2020_sciplex3
+184,WP1066,SrivatsanTrapnell2020_sciplex3
+185,Entinostat (MS-275),SrivatsanTrapnell2020_sciplex3
+186,SB431542,SrivatsanTrapnell2020_sciplex3
+187,SRT1720 HCl,SrivatsanTrapnell2020_sciplex3
+188,GSK1070916,SrivatsanTrapnell2020_sciplex3
+189,M344,SrivatsanTrapnell2020_sciplex3
+190,SL-327,SrivatsanTrapnell2020_sciplex3
+191,Epothilone A,SrivatsanTrapnell2020_sciplex3
+192,Altretamine,SrivatsanTrapnell2020_sciplex3
+193,Tacedinaline (CI994),SrivatsanTrapnell2020_sciplex3
+194,AR-42,SrivatsanTrapnell2020_sciplex3
+195,Andarine,SrivatsanTrapnell2020_sciplex3
+196,Pracinostat (SB939),SrivatsanTrapnell2020_sciplex3
+197,FLLL32,SrivatsanTrapnell2020_sciplex3
+198,RG108,SrivatsanTrapnell2020_sciplex3
+199,YM155 (Sepantronium Bromide),SrivatsanTrapnell2020_sciplex3
+200,AC480 (BMS-599626),SrivatsanTrapnell2020_sciplex3
+201,Cediranib (AZD2171),SrivatsanTrapnell2020_sciplex3
+202,Thiotepa,SrivatsanTrapnell2020_sciplex3
+203,"Cerdulatinib (PRT062070, PRT2070)",SrivatsanTrapnell2020_sciplex3
+204,Zileuton,SrivatsanTrapnell2020_sciplex3
+205,ACSS2.inhibitor,SrivatsanTrapnell2020_sciplex4
+206,ACLY.inhibitor,SrivatsanTrapnell2020_sciplex4
+207,PDH.inhibitor,SrivatsanTrapnell2020_sciplex4
+208,Acetate,SrivatsanTrapnell2020_sciplex4
+209,Citrate,SrivatsanTrapnell2020_sciplex4
+210,Pyruvate,SrivatsanTrapnell2020_sciplex4
+211,Chloride,SrivatsanTrapnell2020_sciplex4
+212,panobinostat,ZhaoSims2021
+213,etoposide,ZhaoSims2021
+214,Ana-12,ZhaoSims2021
+215,RO4929097,ZhaoSims2021
+216,Tazemetostat,ZhaoSims2021
+217,Ispenisib,ZhaoSims2021
+218,erlotinib,ChangYe2021
+219,GNE-069,ChangYe2021
+220,GNE-104,ChangYe2021
+221,BMP4,GehringPachter2019
+222,crizotinib,AissaBenevolenskaya2021
+223,osimertinib,AissaBenevolenskaya2021
+224,osimertinib+crizotinib,AissaBenevolenskaya2021
