@@ -1,4 +1,3 @@
-
 import gzip
 import os
 import scanpy as sc
@@ -8,6 +7,8 @@ import pandas as pd
 from warnings import warn
 from scipy.io import mmwrite
 from scipy.sparse import issparse
+from scipy.stats import zscore
+from scipy.cluster.hierarchy import distance, linkage, dendrogram
 from shutil import copyfileobj
 from chembl_webresource_client.new_client import new_client
 
@@ -338,3 +339,27 @@ def equal_subsampling(adata, obs_key, N_min=None):
     indices = [np.random.choice(adata.obs_names[adata.obs[obs_key]==group], size=N, replace=False) for group in groups]
     selection = np.hstack(np.array(indices))
     return adata[selection].copy()
+
+def cluster_matrix(matrix, how='row', return_order=False, method='centroid'):
+    '''
+    Hierarchical clustering of a matrix/dataframe. `how` can be 'col', 'row' or 'both' (default: 'row').
+    '''
+    if how not in ['col', 'row', 'both']:
+        raise ValueError('Value for "how" must be row or col.')
+    if how!='both':
+        M = matrix if how=='row' else matrix.T
+        dist = distance.pdist(M)
+        link = linkage(dist, method=method)
+        dend = dendrogram(link, no_plot=True)
+        order = np.array(dend['leaves'], dtype=int)
+        if return_order:
+            return order
+        elif isinstance(matrix, pd.DataFrame):
+            return matrix.iloc[order] if how=='row' else matrix.iloc[:, order]
+        else:
+            return matrix[order] if how=='row' else matrix[:, order]
+    else:
+        if return_order:
+            warn('Returning order when clustering both row and col is not supported.')
+        matrix_ = cluster_matrix(matrix, how='row', return_order=False, method=method)
+        return cluster_matrix(matrix_, how='col', return_order=False, method=method)
