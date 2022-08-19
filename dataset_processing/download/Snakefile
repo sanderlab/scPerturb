@@ -1,0 +1,52 @@
+# downloads GEO supplements (which usuall contains counts matrices and metadata)
+# check what this pipeline want to do by typing "snakemake -n"
+# run as "snakemake --jobs 100 -k"
+# (For BIH cluster: snakemake --profile=cubi-v1 --jobs 1000 -k)
+
+# imports
+import os
+import GEOparse
+import pandas as pd
+import numpy as np
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../')))
+from process_supp import *
+import yaml
+
+# unpacking configs
+config = yaml.safe_load(open("../../config.yaml", "r"))
+DIR = config['DIR']
+WDIR = config['WDIR']
+
+# Metainfo defines what to download (supplies GSE GEO accessions)
+tab = pd.read_excel(config['table'])
+GSEs = tab['GSE'][~pd.isna(tab['GSE'])]
+GSEs = [x for x in GSEs if x!='GSE116297']  # this one is weird
+GSEs = [x for x in GSEs if x!='GSE120861']  # runinfo returns empty
+
+
+rule all:
+    """
+    Defines the output / targets that this snakemake file will try to produce.
+    """
+    input:
+        expand(DIR+"{GSE}/supp_download.flag", GSE=GSEs)  # supplements from GEO
+
+### Download
+
+rule get_GEO_supp:
+    """
+    Downloads the GEO supplement associated with a GSE repository.
+    """
+    output:
+        DIR+'{GSE}/supp_download.flag'
+    log: "log/{GSE}_get_GEO_supplement.log"
+    run:
+        gse_obj = GEOparse.get_GEO(geo=wildcards.GSE, destdir=DIR)
+        gse_obj.download_supplementary_files(DIR+wildcards.GSE+'/supp/')
+        # Supplement in superseries directly:
+        if 'supplementary_file' in gse_obj.metadata.keys():
+            urls = gse_obj.metadata['supplementary_file']
+            for url in urls:
+                shell('wget {url} -P '+DIR+wildcards.GSE+'/supp/')
+        shell('touch {output}')
