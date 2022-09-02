@@ -171,5 +171,28 @@ superdata = sc.concat(adatas, index_unique='-', label='library')
 superdata.obs['tissue_type']='cell_line'
 superdata.obs['organism'] = 'human'
 
+obs = adata.obs
+obs['grna_lenient']=obs['grna_lenient'].str.replace(' + ',';', regex=False)
+obs['guide_id']= obs['perturbation']
+## UNCOMMENT TO CHANGE TO HAVE INTERGENIC GUIDES BE TREATED AS CONTROL CONDITION
+
+#obs.loc[obs['perturbation'].str.contains('INTERGENIC') &~ obs['perturbation'].str.contains('+', regex=False),'perturbation']  = 'control'
+
+obs['grna_lenient']=obs['grna_lenient'].str.replace('_','-', regex=False)
+obs['perturbation']=obs['perturbation'].str.replace('_','-', regex=False)
+obs['perturbation']=obs['perturbation'].str.replace(' + ','_', regex=False)
+adata.obs = obs
+adata.var['mt'] = adata.var_names.str.startswith('MT-')  # annotate the group of mitochondrial genes as 'mt'
+adata.var['ribo'] = adata.var_names.str.startswith(("RPS","RPL"))
+qc = sc.pp.calculate_qc_metrics(adata, qc_vars=['mt','ribo'], percent_top=None, log1p=False, inplace=False)           
+#
 # save file
+adata.obs['ncounts'] = qc[0]['total_counts']
+adata.obs['ngenes'] = qc[0]['n_genes_by_counts']
+adata.obs['percent_mito'] = qc[0]['pct_counts_mt']
+adata.obs['percent_ribo'] = qc[0]['pct_counts_ribo']
+adata.var['ncounts'] = qc[1]['total_counts']
+adata.var['ncells'] = qc[1]['n_cells_by_counts']
+adata.obs['nperts'] = adata.obs['perturbation'].str.count('_') + 1
+
 write_as_singles(adata, '/fast/work/users/peidlis_c/data/perturbation_resource_paper/', 'DixitRegev2016', add_h5=True)
