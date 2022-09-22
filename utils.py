@@ -5,9 +5,11 @@ import numpy as np
 import pandas as pd
 
 from warnings import warn
+from tqdm import tqdm
 from scipy.io import mmwrite
 from scipy.sparse import issparse
 from scipy.stats import zscore
+from sklearn.metrics import pairwise_distances
 from scipy.cluster.hierarchy import distance, linkage, dendrogram
 from shutil import copyfileobj
 from chembl_webresource_client.new_client import new_client
@@ -363,3 +365,19 @@ def cluster_matrix(matrix, how='row', return_order=False, method='centroid'):
             warn('Returning order when clustering both row and col is not supported.')
         matrix_ = cluster_matrix(matrix, how='row', return_order=False, method=method)
         return cluster_matrix(matrix_, how='col', return_order=False, method=method)
+
+def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean'):
+    groups = pd.unique(adata.obs[obs_key])
+    df = pd.DataFrame(index=groups, columns=groups, dtype=float)
+    for i, p1 in enumerate(tqdm(groups)):
+        x1 = adata[adata.obs[obs_key]==p1].obsm[obsm_key].copy()
+        N = len(x1)
+        for p2 in groups[i:]:
+            x2 = adata[adata.obs[obs_key]==p2].obsm[obsm_key].copy()
+            pwd = pairwise_distances(x1, x2, metric=dist)
+            M = len(x2)
+            factor = N*M if p1!=p2 else N**2 - N  # correct mean for zero diagonal if comparing to same set
+            mean_pwd = np.sum(pwd) / factor
+            df.loc[p1, p2] = mean_pwd
+            df.loc[p2, p1] = mean_pwd
+    return df

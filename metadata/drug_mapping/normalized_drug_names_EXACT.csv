@@ -1,0 +1,87 @@
+Index,Name,Dataset,Found Names,Found Name IDs,Match Type,Edit Distance,Query Time,ChEMBL,Manual normalization
+0,Navitoclax,McFarlandTshemiak2020_all_expts_combined,['navitoclax'],[['CHEMBL443684']],exact,,0.0001561010000017,CHEMBL443684,exact
+3,Taselisib,McFarlandTshemiak2020_all_expts_combined,['taselisib'],[['CHEMBL2387080']],exact,,8.527800000024399e-05,CHEMBL2387080,exact
+4,Everolimus,McFarlandTshemiak2020_all_expts_combined,['everolimus'],[['CHEMBL1908360']],exact,,6.968399999962571e-05,CHEMBL1908360,exact
+5,Idasanutlin,McFarlandTshemiak2020_all_expts_combined,['idasanutlin'],[['CHEMBL2402737']],exact,,5.879500000105509e-05,CHEMBL2402737,exact
+6,Bortezomib,McFarlandTshemiak2020_all_expts_combined,['bortezomib'],[['CHEMBL325041']],exact,,5.169299999963073e-05,CHEMBL325041,exact
+7,Trametinib,McFarlandTshemiak2020_all_expts_combined,['trametinib'],[['CHEMBL2103875']],exact,,5.034300000161807e-05,CHEMBL2103875,exact
+8,Afatinib,McFarlandTshemiak2020_all_expts_combined,['afatinib'],[['CHEMBL1173655']],exact,,5.068299999777537e-05,CHEMBL1173655,exact
+9,Dabrafenib,McFarlandTshemiak2020_all_expts_combined,['dabrafenib'],[['CHEMBL2028663']],exact,,5.057599999958029e-05,CHEMBL2028663,exact
+10,Gemcitabine,McFarlandTshemiak2020_all_expts_combined,['gemcitabine'],[['CHEMBL888']],exact,,5.860699999971075e-05,CHEMBL888,exact
+12,Prexasertib,McFarlandTshemiak2020_all_expts_combined,['prexasertib'],[['CHEMBL3544911']],exact,,7.817299999857141e-05,CHEMBL3544911,exact
+17,TAK-901,SrivatsanTrapnell2020_sciplex3,['tak901'],[['CHEMBL3544932']],exact,,8.95850000013354e-05,CHEMBL3544932,exact
+21,Busulfan ,SrivatsanTrapnell2020_sciplex3,['busulfan'],[['CHEMBL820']],exact,,5.566600000150856e-05,CHEMBL820,exact
+26,Raltitrexed,SrivatsanTrapnell2020_sciplex3,['raltitrexed'],[['CHEMBL225071']],exact,,8.185400000115806e-05,CHEMBL225071,exact
+33,Divalproex Sodium,SrivatsanTrapnell2020_sciplex3,['divalproexsodium'],[['CHEMBL2105613']],exact,,5.978599999778567e-05,CHEMBL2105613,exact
+34,BMS-911543,SrivatsanTrapnell2020_sciplex3,['bms911543'],[['CHEMBL3545215']],exact,,5.874599999700081e-05,CHEMBL3545215,exact
+35,Carmofur,SrivatsanTrapnell2020_sciplex3,['carmofur'],[['CHEMBL460499']],exact,,5.589799999938805e-05,CHEMBL460499,exact
+37,PJ34,SrivatsanTrapnell2020_sciplex3,['pj34'],"[['CHEMBL3233481', 'CHEMBL372303']]",exact,,8.810499999967192e-05,CHEMBL3233481;CHEMBL372303,exact
+38,Pirarubicin,SrivatsanTrapnell2020_sciplex3,['pirarubicin'],[['CHEMBL2354444']],exact,,5.979000000166934e-05,CHEMBL2354444,exact
+39,MLN8054,SrivatsanTrapnell2020_sciplex3,['mln8054'],[['CHEMBL259084']],exact,,5.837600000191401e-05,CHEMBL259084,exact
+40,Maraviroc,SrivatsanTrapnell2020_sciplex3,['maraviroc'],[['CHEMBL1201187']],exact,,5.824200000148494e-05,CHEMBL1201187,exact
+44,Sodium Phenylbutyrate,SrivatsanTrapnell2020_sciplex3,['sodiumphenylbutyrate'],[['CHEMBL1746']],exact,,5.719600000020364e-05,CHEMBL1746,exact
+47,Disulfiram ,SrivatsanTrapnell2020_sciplex3,['disulfiram'],[['CHEMBL964']],exact,,8.443399999791268e-05,CHEMBL964,exact
+48,Celecoxib,SrivatsanTrapnell2020_sciplex3,['celecoxib'],[['CHEMBL118']],exact,,5.719800000036912e-05,CHEMBL118,exact
+50,Thalidomide,SrivatsanTrapnell2020_sciplex3,['thalidomide'],[['CHEMBL468']],exact,,5.559899999951767e-05,CHEMBL468,exact
+51,SNS-314,SrivatsanTrapnell2020_sciplex3,['sns314'],[['CHEMBL482767']],exact,,5.8541000001355314e-05,CHEMBL482767,exact
+56,AZD1480,SrivatsanTrapnell2020_sciplex3,['azd1480'],[['CHEMBL1231124']],exact,,8.728199999907815e-05,CHEMBL1231124,exact
+61,Hesperadin,SrivatsanTrapnell2020_sciplex3,['hesperadin'],[['CHEMBL514409']],exact,,8.233000000146262e-05,CHEMBL514409,exact
+65,Ellagic acid,SrivatsanTrapnell2020_sciplex3,['ellagicacid'],[['CHEMBL6246']],exact,,5.7113000000441616e-05,CHEMBL6246,exact
+68,Resminostat,SrivatsanTrapnell2020_sciplex3,['resminostat'],[['CHEMBL4296717']],exact,,8.700800000127629e-05,CHEMBL4296717,exact
+75,Meprednisone,SrivatsanTrapnell2020_sciplex3,['meprednisone'],[['CHEMBL1201148']],exact,,5.889899999900194e-05,CHEMBL1201148,exact
+79,AMG-900,SrivatsanTrapnell2020_sciplex3,['amg900'],[['CHEMBL2140408']],exact,,9.14400000020521e-05,CHEMBL2140408,exact
+82,Prednisone ,SrivatsanTrapnell2020_sciplex3,['prednisone'],[['CHEMBL635']],exact,,5.881000000229619e-05,CHEMBL635,exact
+87,PHA-680632,SrivatsanTrapnell2020_sciplex3,['pha680632'],[['CHEMBL363160']],exact,,5.945500000237303e-05,CHEMBL363160,exact
+88,Dasatinib,SrivatsanTrapnell2020_sciplex3,['dasatinib'],[['CHEMBL1421']],exact,,5.5788999997474775e-05,CHEMBL1421,exact
+95,Clevudine ,SrivatsanTrapnell2020_sciplex3,['clevudine'],[['CHEMBL458875']],exact,,5.975500000232614e-05,CHEMBL458875,exact
+96,ABT-737,SrivatsanTrapnell2020_sciplex3,['abt737'],[['CHEMBL376408']],exact,,5.888700000156177e-05,CHEMBL376408,exact
+101,Toremifene Citrate,SrivatsanTrapnell2020_sciplex3,['toremifenecitrate'],[['CHEMBL1200675']],exact,,6.010099999897989e-05,CHEMBL1200675,exact
+103,Ofloxacin,SrivatsanTrapnell2020_sciplex3,['ofloxacin'],[['CHEMBL4']],exact,,6.76389999973992e-05,CHEMBL4,exact
+106,Alendronate sodium trihydrate,SrivatsanTrapnell2020_sciplex3,['alendronatesodiumtrihydrate'],[['CHEMBL675']],exact,,5.684099999925252e-05,CHEMBL675,exact
+111,Anacardic Acid,SrivatsanTrapnell2020_sciplex3,['anacardicacid'],"[['CHEMBL33778', 'CHEMBL455368']]",exact,,9.027599999811288e-05,CHEMBL33778;CHEMBL455368,exact
+114,PD173074,SrivatsanTrapnell2020_sciplex3,['pd173074'],[['CHEMBL189584']],exact,,7.998799999953121e-05,CHEMBL189584,exact
+115,BMS-754807,SrivatsanTrapnell2020_sciplex3,['bms754807'],[['CHEMBL575448']],exact,,6.106400000049916e-05,CHEMBL575448,exact
+117,Quercetin,SrivatsanTrapnell2020_sciplex3,['quercetin'],[['CHEMBL50']],exact,,9.874700000267468e-05,CHEMBL50,exact
+119,Mesna ,SrivatsanTrapnell2020_sciplex3,['mesna'],"[['CHEMBL1098319', 'CHEMBL975']]",exact,,7.382600000127582e-05,CHEMBL1098319;CHEMBL975,exact
+120,KW-2449,SrivatsanTrapnell2020_sciplex3,['kw2449'],[['CHEMBL1908397']],exact,,5.866799999765249e-05,CHEMBL1908397,exact
+121,Azacitidine ,SrivatsanTrapnell2020_sciplex3,['azacitidine'],[['CHEMBL1489']],exact,,5.79290000004562e-05,CHEMBL1489,exact
+122,Lomustine ,SrivatsanTrapnell2020_sciplex3,['lomustine'],[['CHEMBL514']],exact,,6.119500000068001e-05,CHEMBL514,exact
+126,Resveratrol,SrivatsanTrapnell2020_sciplex3,['resveratrol'],[['CHEMBL165']],exact,,8.73080000012294e-05,CHEMBL165,exact
+127,CYC116,SrivatsanTrapnell2020_sciplex3,['cyc116'],[['CHEMBL482967']],exact,,5.856599999987111e-05,CHEMBL482967,exact
+128,ENMD-2076,SrivatsanTrapnell2020_sciplex3,['enmd2076'],"[['CHEMBL482968', 'CHEMBL52885']]",exact,,6.067700000045306e-05,CHEMBL482968;CHEMBL52885,exact
+129,Curcumin,SrivatsanTrapnell2020_sciplex3,['curcumin'],[['CHEMBL116438']],exact,,5.533599999907324e-05,CHEMBL116438,exact
+131,Aminoglutethimide ,SrivatsanTrapnell2020_sciplex3,['aminoglutethimide'],[['CHEMBL488']],exact,,8.579800000063642e-05,CHEMBL488,exact
+133,Daphnetin,SrivatsanTrapnell2020_sciplex3,['daphnetin'],[['CHEMBL244948']],exact,,8.667999999900644e-05,CHEMBL244948,exact
+134,CUDC-101,SrivatsanTrapnell2020_sciplex3,['cudc101'],[['CHEMBL598797']],exact,,6.629499999988298e-05,CHEMBL598797,exact
+139,Sorafenib Tosylate,SrivatsanTrapnell2020_sciplex3,['sorafenibtosylate'],[['CHEMBL1200485']],exact,,6.689599999987195e-05,CHEMBL1200485,exact
+146,MK-0752,SrivatsanTrapnell2020_sciplex3,['mk0752'],[['CHEMBL4205422']],exact,,5.909200000075998e-05,CHEMBL4205422,exact
+148,Capecitabine ,SrivatsanTrapnell2020_sciplex3,['capecitabine'],[['CHEMBL1773']],exact,,5.95069999995701e-05,CHEMBL1773,exact
+152,Sirtinol,SrivatsanTrapnell2020_sciplex3,['sirtinol'],[['CHEMBL380797']],exact,,5.497500000117839e-05,CHEMBL380797,exact
+154,Decitabine,SrivatsanTrapnell2020_sciplex3,['decitabine'],[['CHEMBL1201129']],exact,,8.62320000010186e-05,CHEMBL1201129,exact
+155,AT9283,SrivatsanTrapnell2020_sciplex3,['at9283'],[['CHEMBL495727']],exact,,5.763399999736407e-05,CHEMBL495727,exact
+158,JNJ-7706621,SrivatsanTrapnell2020_sciplex3,['jnj7706621'],[['CHEMBL191003']],exact,,9.894800000154191e-05,CHEMBL191003,exact
+159,Costunolide,SrivatsanTrapnell2020_sciplex3,['costunolide'],[['CHEMBL86416']],exact,,5.915200000217169e-05,CHEMBL86416,exact
+164,Cimetidine ,SrivatsanTrapnell2020_sciplex3,['cimetidine'],[['CHEMBL30']],exact,,0.0001276300000014,CHEMBL30,exact
+165,Triamcinolone Acetonide,SrivatsanTrapnell2020_sciplex3,['triamcinoloneacetonide'],[['CHEMBL1504']],exact,,7.2212999999266e-05,CHEMBL1504,exact
+168,Entacapone,SrivatsanTrapnell2020_sciplex3,['entacapone'],[['CHEMBL953']],exact,,5.915899999919816e-05,CHEMBL953,exact
+171,Fulvestrant,SrivatsanTrapnell2020_sciplex3,['fulvestrant'],[['CHEMBL1358']],exact,,5.952300000089394e-05,CHEMBL1358,exact
+173,CUDC-907,SrivatsanTrapnell2020_sciplex3,['cudc907'],[['CHEMBL3622533']],exact,,6.351300000062565e-05,CHEMBL3622533,exact
+175,Amisulpride,SrivatsanTrapnell2020_sciplex3,['amisulpride'],[['CHEMBL243712']],exact,,5.383599999930766e-05,CHEMBL243712,exact
+181,Ramelteon,SrivatsanTrapnell2020_sciplex3,['ramelteon'],[['CHEMBL1218']],exact,,5.418299999959686e-05,CHEMBL1218,exact
+184,WP1066,SrivatsanTrapnell2020_sciplex3,['wp1066'],[['CHEMBL1923234']],exact,,5.822300000346559e-05,CHEMBL1923234,exact
+186,SB431542,SrivatsanTrapnell2020_sciplex3,['sb431542'],[['CHEMBL440084']],exact,,5.677200000064886e-05,CHEMBL440084,exact
+188,GSK1070916,SrivatsanTrapnell2020_sciplex3,['gsk1070916'],[['CHEMBL1090479']],exact,,9.029599999976769e-05,CHEMBL1090479,exact
+191,Epothilone A,SrivatsanTrapnell2020_sciplex3,['epothilonea'],[['CHEMBL329993']],exact,,8.717200000063485e-05,CHEMBL329993,exact
+192,Altretamine,SrivatsanTrapnell2020_sciplex3,['altretamine'],[['CHEMBL1455']],exact,,5.9663000001819455e-05,CHEMBL1455,exact
+194,AR-42,SrivatsanTrapnell2020_sciplex3,['ar42'],[['CHEMBL191482']],exact,,6.335000000134983e-05,CHEMBL191482,exact
+202,Thiotepa,SrivatsanTrapnell2020_sciplex3,['thiotepa'],[['CHEMBL671']],exact,,6.050799999712808e-05,CHEMBL671,exact
+204,Zileuton,SrivatsanTrapnell2020_sciplex3,['zileuton'],[['CHEMBL93']],exact,,5.4507000001535744e-05,CHEMBL93,exact
+209,Citrate,SrivatsanTrapnell2020_sciplex4,['citrate'],[['CHEMBL1261']],exact,,9.30159999974478e-05,CHEMBL1261,exact
+210,Pyruvate,SrivatsanTrapnell2020_sciplex4,['pyruvate'],[['CHEMBL1162144']],exact,,6.722299999850634e-05,CHEMBL1162144,exact
+212,panobinostat,ZhaoSims2021,['panobinostat'],[['CHEMBL483254']],exact,,7.987400000075695e-05,CHEMBL483254,exact
+213,etoposide,ZhaoSims2021,['etoposide'],[['CHEMBL44657']],exact,,5.672400000378275e-05,CHEMBL44657,exact
+215,RO4929097,ZhaoSims2021,['ro4929097'],[['CHEMBL4297422']],exact,,0.0001177039999973,CHEMBL4297422,exact
+216,Tazemetostat,ZhaoSims2021,['tazemetostat'],[['CHEMBL3414621']],exact,,5.343699999826868e-05,CHEMBL3414621,exact
+218,erlotinib,ChangYe2021,['erlotinib'],[['CHEMBL553']],exact,,8.755399999671454e-05,CHEMBL553,exact
+222,crizotinib,AissaBenevolenskaya2021,['crizotinib'],[['CHEMBL601719']],exact,,0.000109382000005,CHEMBL601719,exact
+223,osimertinib,AissaBenevolenskaya2021,['osimertinib'],[['CHEMBL3353410']],exact,,0.0001050440000014,CHEMBL3353410,exact
