@@ -17,6 +17,8 @@ pip install scperturb
 
 ### Usage example
 
+Check out [this notebook](https://github.com/sanderlab/scPerturb/blob/master/package/notebooks/e-distance.ipynb) for a tutorial.
+Basic usage is:
 ```
 # E-distances
 estats = edist(adata, obs_key='perturbation')
@@ -26,7 +28,7 @@ estats_control = estats.loc['control']
 df = etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean', control='control', alpha=0.05, runs=100)
 ```
 
-Check out package/notebooks/e-distance.ipynb for a tutorial.
+
 
 ## Instructions to run the code to recreate the manuscript figures
 - install conda if necessary (also check out mamba, it's way faster)
