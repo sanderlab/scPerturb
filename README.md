@@ -1,4 +1,4 @@
-# scPerturb: A resource and a tool for single-cell perturbation data
+# scPerturb: A resource and a python tool for single-cell perturbation data
 
 ## Where to find the data
 The datasets are available to download on [scperturb.org](https://scperturb.org/) and alternatively on zenodo (in case the website does not work):
