@@ -1,7 +1,7 @@
 # scPerturb: A resource and a python tool for single-cell perturbation data
 
 ## Where to find the data
-The datasets are available to download on [scperturb.org](https://scperturb.org/) and alternatively on zenodo (in case the website does not work):
+The datasets are available to download on [scperturb.org](https://scperturb.org/) and alternatively on Zenodo:
 - [RNA data](https://zenodo.org/record/7041849)
 - [ATAC data](https://zenodo.org/record/7058382)
 
@@ -27,8 +27,6 @@ estats_control = estats.loc['control']
 # E-test for difference to control
 df = etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean', control='control', alpha=0.05, runs=100)
 ```
-
-
 
 ## Instructions to run the code to recreate the manuscript figures
 - install conda if necessary (also check out mamba, it's way faster)
