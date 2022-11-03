@@ -1,0 +1,74 @@
+Index,Name,Dataset,Found Names,Found Name IDs,Match Type,Edit Distance,Query Time,ChEMBL,Manual normalization
+19,Abexinostat (PCI-24781),SrivatsanTrapnell2020_sciplex3,"['abexinostat', 'pci24781']","[['CHEMBL2103863'], ['CHEMBL2103863']]",substring,,0.0001504180000004,CHEMBL2103863,unique-id
+20,Alisertib (MLN8237),SrivatsanTrapnell2020_sciplex3,"['alisertib', 'mln8237']","[['CHEMBL483158'], ['CHEMBL483158']]",substring,,8.915999999814517e-05,CHEMBL483158,unique-id
+22,Obatoclax Mesylate (GX15-070),SrivatsanTrapnell2020_sciplex3,"['gx15070', 'obatoclax']","[['CHEMBL408194'], ['CHEMBL2107358', 'CHEMBL408194']]",substring,,0.000103353,CHEMBL408194,majority-voting
+23,Enzastaurin (LY317615),SrivatsanTrapnell2020_sciplex3,"['enzastaurin', 'ly317615']","[['CHEMBL300138'], ['CHEMBL300138']]",substring,,8.242799999891304e-05,CHEMBL300138,unique-id
+31,Iniparib (BSI-201),SrivatsanTrapnell2020_sciplex3,"['bsi201', 'iniparib']","[['CHEMBL1170047'], ['CHEMBL1170047']]",substring,,0.0001357639999994,CHEMBL1170047,unique-id
+32,Lenalidomide (CC-5013),SrivatsanTrapnell2020_sciplex3,"['cc5013', 'lenalidomide']","[['CHEMBL848'], ['CHEMBL848']]",substring,,8.988600000137126e-05,CHEMBL848,unique-id
+41,Tanespimycin (17-AAG),SrivatsanTrapnell2020_sciplex3,"['17aag', 'tanespimycin']","[['CHEMBL109480'], ['CHEMBL109480']]",substring,,9.319599999813022e-05,CHEMBL109480,unique-id
+42,Roxadustat (FG-4592),SrivatsanTrapnell2020_sciplex3,"['fg4592', 'roxadustat']","[['CHEMBL2338329'], ['CHEMBL2338329']]",substring,,8.916999999897257e-05,CHEMBL2338329,unique-id
+43,"Patupilone (EPO906, Epothilone B)",SrivatsanTrapnell2020_sciplex3,"['epo906', 'patupilone']","[['CHEMBL94657'], ['CHEMBL94657']]",substring,,9.3073000002164e-05,CHEMBL94657,unique-id
+45,Dacinostat (LAQ824),SrivatsanTrapnell2020_sciplex3,"['dacinostat', 'laq824']","[['CHEMBL356066'], ['CHEMBL356066']]",substring,,9.110700000292128e-05,CHEMBL356066,unique-id
+49,Linifanib (ABT-869),SrivatsanTrapnell2020_sciplex3,"['abt869', 'linifanib']","[['CHEMBL223360'], ['CHEMBL223360']]",substring,,9.303499999901987e-05,CHEMBL223360,unique-id
+53,JNJ-26854165 (Serdemetan),SrivatsanTrapnell2020_sciplex3,"['jnj26854165', 'serdemetan']","[['CHEMBL2137530'], ['CHEMBL2137530']]",substring,,0.0001187000000015,CHEMBL2137530,unique-id
+59,Momelotinib (CYT387),SrivatsanTrapnell2020_sciplex3,"['cyt387', 'momelotinib']","[['CHEMBL1078178', 'CHEMBL2219411'], ['CHEMBL1078178']]",substring,,0.0001300299999975,CHEMBL1078178,majority-voting
+62,"Roscovitine (Seliciclib,CYC202)",SrivatsanTrapnell2020_sciplex3,['roscovitine'],[['CHEMBL14762']],substring,,7.026099999762891e-05,CHEMBL14762,unique-id
+63,MK-5108 (VX-689),SrivatsanTrapnell2020_sciplex3,"['mk5108', 'vx689']","[['CHEMBL3182444'], ['CHEMBL3182444']]",substring,,9.254500000110966e-05,CHEMBL3182444,unique-id
+64,Tucidinostat (Chidamide),SrivatsanTrapnell2020_sciplex3,"['chidamide', 'tucidinostat']","[['CHEMBL3621988'], ['CHEMBL3621988']]",substring,,8.660199999965812e-05,CHEMBL3621988,unique-id
+71,Nintedanib (BIBF 1120),SrivatsanTrapnell2020_sciplex3,['nintedanib'],[['CHEMBL502835']],substring,,0.0001193019999981,CHEMBL502835,unique-id
+72,Trametinib (GSK1120212),SrivatsanTrapnell2020_sciplex3,"['gsk1120212', 'trametinib']","[['CHEMBL2103875'], ['CHEMBL2103875']]",substring,,9.005999999800451e-05,CHEMBL2103875,unique-id
+74,Panobinostat (LBH589),SrivatsanTrapnell2020_sciplex3,"['lbh589', 'panobinostat']","[['CHEMBL483254'], ['CHEMBL483254']]",substring,,0.0002250590000016,CHEMBL483254,unique-id
+76,ENMD-2076 L-(+)-Tartaric acid ,SrivatsanTrapnell2020_sciplex3,['enmd2076'],"[['CHEMBL482968', 'CHEMBL52885']]",substring,,8.125800000158279e-05,CHEMBL482968;CHEMBL52885,majority-voting
+77,Avagacestat (BMS-708163),SrivatsanTrapnell2020_sciplex3,"['avagacestat', 'bms708163']","[['CHEMBL1090771'], ['CHEMBL1090771']]",substring,,9.020099999901277e-05,CHEMBL1090771,unique-id
+80,Fasudil (HA-1077) HCl,SrivatsanTrapnell2020_sciplex3,"['fasudil', 'ha1077']","[['CHEMBL38380', 'CHEMBL541388'], ['CHEMBL38380']]",substring,,0.0001040199999984,CHEMBL38380,majority-voting
+81,Trichostatin A (TSA),SrivatsanTrapnell2020_sciplex3,['trichostatin'],[['CHEMBL99']],substring,,7.46720000002199e-05,CHEMBL99,unique-id
+83,Crizotinib (PF-02341066),SrivatsanTrapnell2020_sciplex3,"['crizotinib', 'pf02341066']","[['CHEMBL601719'], ['CHEMBL601719']]",substring,,8.824700000076291e-05,CHEMBL601719,unique-id
+84,Navitoclax (ABT-263),SrivatsanTrapnell2020_sciplex3,"['abt263', 'navitoclax']","[['CHEMBL443684'], ['CHEMBL443684']]",substring,,8.600500000000011e-05,CHEMBL443684,unique-id
+86,Barasertib (AZD1152-HQPA),SrivatsanTrapnell2020_sciplex3,"['azd1152hqpa', 'barasertib']","[['CHEMBL215152'], ['CHEMBL215152', 'CHEMBL415049']]",substring,,0.0001233719999973,CHEMBL215152,majority-voting
+89,"Fluorouracil (5-Fluoracil, 5-FU)",SrivatsanTrapnell2020_sciplex3,"['5fu', 'fluorouracil']","[['CHEMBL185'], ['CHEMBL185']]",substring,,9.877399999780324e-05,CHEMBL185,unique-id
+90,Quisinostat (JNJ-26481585) 2HCl,SrivatsanTrapnell2020_sciplex3,"['jnj26481585', 'quisinostat']","[['CHEMBL2105763', 'CHEMBL3039527'], ['CHEMBL2105763']]",substring,,9.24940000004426e-05,CHEMBL2105763,majority-voting
+91,"Tozasertib (VX-680, MK-0457)",SrivatsanTrapnell2020_sciplex3,"['mk0457', 'tozasertib', 'vx680']","[['CHEMBL2105657', 'CHEMBL572878'], ['CHEMBL572878'], ['CHEMBL2105657', 'CHEMBL572878']]",substring,,0.0001161869999997,CHEMBL572878,majority-voting
+92,Gandotinib (LY2784544),SrivatsanTrapnell2020_sciplex3,"['gandotinib', 'ly2784544']","[['CHEMBL2107823'], ['CHEMBL2107823']]",substring,,8.703399999987482e-05,CHEMBL2107823,unique-id
+94,"Temsirolimus (CCI-779, NSC 683864)",SrivatsanTrapnell2020_sciplex3,"['cci779', 'temsirolimus']","[['CHEMBL1201182'], ['CHEMBL1201182']]",substring,,0.0001205130000023,CHEMBL1201182,unique-id
+97,SRT2104 (GSK2245840),SrivatsanTrapnell2020_sciplex3,['srt2104'],[['CHEMBL4297436']],substring,,6.815199999721244e-05,CHEMBL4297436,unique-id
+100,Belinostat (PXD101),SrivatsanTrapnell2020_sciplex3,"['belinostat', 'pxd101']","[['CHEMBL408513'], ['CHEMBL408513']]",substring,,0.0001285750000015,CHEMBL408513,unique-id
+102,Ruxolitinib (INCB018424),SrivatsanTrapnell2020_sciplex3,"['incb018424', 'ruxolitinib']","[['CHEMBL1789941'], ['CHEMBL1789941']]",substring,,8.872300000106748e-05,CHEMBL1789941,unique-id
+104,Bosutinib (SKI-606),SrivatsanTrapnell2020_sciplex3,"['bosutinib', 'ski606']","[['CHEMBL288441'], ['CHEMBL288441']]",substring,,8.755300000018451e-05,CHEMBL288441,unique-id
+105,Regorafenib (BAY 73-4506),SrivatsanTrapnell2020_sciplex3,['regorafenib'],[['CHEMBL1946170']],substring,,6.841099999732592e-05,CHEMBL1946170,unique-id
+112,Ivosidenib (AG-120),SrivatsanTrapnell2020_sciplex3,"['ag120', 'ivosidenib']","[['CHEMBL3989958'], ['CHEMBL3989958']]",substring,,9.567500000073892e-05,CHEMBL3989958,unique-id
+118,Lapatinib (GW-572016) Ditosylate,SrivatsanTrapnell2020_sciplex3,"['gw572016', 'lapatinib']","[['CHEMBL554'], ['CHEMBL1201179', 'CHEMBL554']]",substring,,0.0001012650000014,CHEMBL554,majority-voting
+123,Valproic acid sodium salt (Sodium valproate),SrivatsanTrapnell2020_sciplex3,"['salt', 'valproate']","[['CHEMBL3544989'], ['CHEMBL109']]",substring,,0.0001021130000005,CHEMBL3544989;CHEMBL109,majority-voting
+124,Motesanib Diphosphate (AMG-706),SrivatsanTrapnell2020_sciplex3,"['amg706', 'motesanib']","[['CHEMBL2107357', 'CHEMBL572881'], ['CHEMBL572881']]",substring,,9.503200000082757e-05,CHEMBL572881,majority-voting
+135,Filgotinib (GLPG0634),SrivatsanTrapnell2020_sciplex3,"['filgotinib', 'glpg0634']","[['CHEMBL3301607'], ['CHEMBL3301607']]",substring,,9.437499999975783e-05,CHEMBL3301607,unique-id
+136,Veliparib (ABT-888),SrivatsanTrapnell2020_sciplex3,"['abt888', 'veliparib']","[['CHEMBL506871'], ['CHEMBL506871']]",substring,,8.668699999958562e-05,CHEMBL506871,unique-id
+137,Danusertib (PHA-739358),SrivatsanTrapnell2020_sciplex3,"['danusertib', 'pha739358']","[['CHEMBL402548'], ['CHEMBL402548']]",substring,,0.0001624219999989,CHEMBL402548,unique-id
+138,Alvespimycin (17-DMAG) HCl,SrivatsanTrapnell2020_sciplex3,['alvespimycin'],[['CHEMBL383824']],substring,,7.045499999946969e-05,CHEMBL383824,unique-id
+140,2-Methoxyestradiol (2-MeOE2),SrivatsanTrapnell2020_sciplex3,['2methoxyestradiol'],[['CHEMBL299613']],substring,,6.9279000001643e-05,CHEMBL299613,unique-id
+142,"Baricitinib (LY3009104, INCB028050)",SrivatsanTrapnell2020_sciplex3,"['baricitinib', 'incb028050', 'ly3009104']","[['CHEMBL2105759'], ['CHEMBL2105759'], ['CHEMBL2105759']]",substring,,0.000143138000002,CHEMBL2105759,unique-id
+143,"Fedratinib (SAR302503, TG101348)",SrivatsanTrapnell2020_sciplex3,"['fedratinib', 'sar302503', 'tg101348']","[['CHEMBL1287853'], ['CHEMBL1287853'], ['CHEMBL1287853']]",substring,,0.0001149669999982,CHEMBL1287853,unique-id
+145,S-Ruxolitinib (INCB018424),SrivatsanTrapnell2020_sciplex3,['incb018424'],[['CHEMBL1789941']],substring,,9.508900000199104e-05,CHEMBL1789941,unique-id
+147,Tofacitinib (CP-690550) Citrate,SrivatsanTrapnell2020_sciplex3,"['citrate', 'cp690550', 'tofacitinib']","[['CHEMBL1261'], ['CHEMBL221959'], ['CHEMBL221959']]",substring,,0.0001362569999976,CHEMBL221959,majority-voting
+149,SGI-1776 free base,SrivatsanTrapnell2020_sciplex3,['sgi1776'],[['CHEMBL1952329']],substring,,6.610299999820768e-05,CHEMBL1952329,unique-id
+150,Nilotinib (AMN-107),SrivatsanTrapnell2020_sciplex3,"['amn107', 'nilotinib']","[['CHEMBL255863'], ['CHEMBL255863']]",substring,,8.862700000022983e-05,CHEMBL255863,unique-id
+151,Tranylcypromine (2-PCPA) HCl,SrivatsanTrapnell2020_sciplex3,['tranylcypromine'],"[['CHEMBL257990', 'CHEMBL313833', 'CHEMBL3989843']]",substring,,7.619499999833579e-05,CHEMBL257990;CHEMBL313833;CHEMBL3989843,majority-voting
+160,AICAR (Acadesine),SrivatsanTrapnell2020_sciplex3,['acadesine'],[['CHEMBL1551724']],substring,,6.824100000102362e-05,CHEMBL1551724,unique-id
+161,Mocetinostat (MGCD0103),SrivatsanTrapnell2020_sciplex3,"['mgcd0103', 'mocetinostat']","[['CHEMBL272980'], ['CHEMBL272980']]",substring,,8.7665000002346e-05,CHEMBL272980,unique-id
+167,Flavopiridol HCl,SrivatsanTrapnell2020_sciplex3,['flavopiridol'],[['CHEMBL428690']],substring,,0.000104775999997,CHEMBL428690,unique-id
+169,Rigosertib (ON-01910),SrivatsanTrapnell2020_sciplex3,"['on01910', 'rigosertib']","[['CHEMBL1241855', 'CHEMBL2013119'], ['CHEMBL1241855']]",substring,,9.97839999996586e-05,CHEMBL1241855,majority-voting
+170,GSK J1,SrivatsanTrapnell2020_sciplex3,['j1'],[['CHEMBL4303060']],substring,,6.751899999812849e-05,CHEMBL4303060,unique-id
+172,Givinostat (ITF2357),SrivatsanTrapnell2020_sciplex3,['givinostat'],[['CHEMBL1213492']],substring,,6.79310000002431e-05,CHEMBL1213492,unique-id
+174,Vandetanib (ZD6474),SrivatsanTrapnell2020_sciplex3,"['vandetanib', 'zd6474']","[['CHEMBL24828'], ['CHEMBL24828']]",substring,,8.691900000101782e-05,CHEMBL24828,unique-id
+176,Pelitinib (EKB-569),SrivatsanTrapnell2020_sciplex3,"['ekb569', 'pelitinib']","[['CHEMBL607707'], ['CHEMBL607707']]",substring,,9.146200000031968e-05,CHEMBL607707,unique-id
+177,Mercaptopurine (6-MP),SrivatsanTrapnell2020_sciplex3,['mercaptopurine'],"[['CHEMBL1200751', 'CHEMBL1425']]",substring,,7.847500000224272e-05,CHEMBL1200751;CHEMBL1425,majority-voting
+178,"Rucaparib (AG-014699,PF-01367338) phosphate",SrivatsanTrapnell2020_sciplex3,['rucaparib'],[['CHEMBL1173055']],substring,,7.569299999943269e-05,CHEMBL1173055,unique-id
+179,INO-1001 (3-Aminobenzamide),SrivatsanTrapnell2020_sciplex3,"['3aminobenzamide', 'ino1001']","[['CHEMBL81977'], ['CHEMBL1556']]",substring,,9.402399999913769e-05,CHEMBL81977;CHEMBL1556,majority-voting
+180,"Luminespib (AUY-922, NVP-AUY922)",SrivatsanTrapnell2020_sciplex3,"['luminespib', 'nvpauy922']","[['CHEMBL252164'], ['CHEMBL252164']]",substring,,8.98549999988063e-05,CHEMBL252164,unique-id
+182,Tazemetostat (EPZ-6438),SrivatsanTrapnell2020_sciplex3,"['epz6438', 'tazemetostat']","[['CHEMBL3414621'], ['CHEMBL3414621']]",substring,,8.630399999987048e-05,CHEMBL3414621,unique-id
+183,Streptozotocin (STZ),SrivatsanTrapnell2020_sciplex3,"['streptozotocin', 'stz']","[['CHEMBL1651906'], ['CHEMBL1651906']]",substring,,8.438900000129479e-05,CHEMBL1651906,unique-id
+185,Entinostat (MS-275),SrivatsanTrapnell2020_sciplex3,"['entinostat', 'ms275']","[['CHEMBL27759'], ['CHEMBL27759']]",substring,,8.360500000037518e-05,CHEMBL27759,unique-id
+193,Tacedinaline (CI994),SrivatsanTrapnell2020_sciplex3,"['ci994', 'tacedinaline']","[['CHEMBL235191'], ['CHEMBL235191']]",substring,,8.967699999828938e-05,CHEMBL235191,unique-id
+196,Pracinostat (SB939),SrivatsanTrapnell2020_sciplex3,"['pracinostat', 'sb939']","[['CHEMBL1851943'], ['CHEMBL1851943']]",substring,,0.0001314240000027,CHEMBL1851943,unique-id
+199,YM155 (Sepantronium Bromide),SrivatsanTrapnell2020_sciplex3,"['bromide', 'sepantronium', 'ym155']","[['CHEMBL1231461'], ['CHEMBL2110734'], ['CHEMBL2105734']]",substring,,0.0001640399999978,CHEMBL1231461;CHEMBL2110734;CHEMBL2105734,majority-voting
+200,AC480 (BMS-599626),SrivatsanTrapnell2020_sciplex3,"['ac480', 'bms599626']","[['CHEMBL1645462'], ['CHEMBL1645462']]",substring,,8.519100000015101e-05,CHEMBL1645462,unique-id
+201,Cediranib (AZD2171),SrivatsanTrapnell2020_sciplex3,"['azd2171', 'cediranib']","[['CHEMBL491473'], ['CHEMBL491473']]",substring,,8.79170000018803e-05,CHEMBL491473,unique-id
+203,"Cerdulatinib (PRT062070, PRT2070)",SrivatsanTrapnell2020_sciplex3,"['cerdulatinib', 'prt062070', 'prt2070']","[['CHEMBL4116008'], ['CHEMBL4116008'], ['CHEMBL4116008']]",substring,,0.0001048380000021,CHEMBL4116008,unique-id

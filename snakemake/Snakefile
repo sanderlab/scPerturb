@@ -1,0 +1,138 @@
+# snakemake --profile=cubi-v1 --jobs 100 -k --use-conda --restart-times 0
+# snakemake --forceall --dag | dot -Tpdf > snake_dag.pdf
+# snakemake --forceall --rulegraph | dot -Tpdf > snake_rulegraph.pdf
+
+import pandas as pd
+import numpy as np
+import os
+import sys
+import yaml
+import matplotlib.pyplot as pl
+
+# Paths from config
+with open("../config.yaml", "r") as stream:
+	config = yaml.safe_load(stream)
+SDIR = config['DIR']
+WDIR = config['WDIR']
+SDIR = config['DOWNDIR']
+CDIR = config['CDIR']
+
+sys.path.insert(1, CDIR)
+from utils import *
+
+# dict mapping dataset names to their paths
+h5_files = {}
+for path, subdirs, files in os.walk(WDIR):
+	for name in files:
+		if '.h5ad' in name:
+			h5_files[name[:-5]] = os.path.join(path, name)
+for k in ['exampledataset', 'NormanWeissman2019_raw']:  # dev relicts
+	if k in h5_files.keys(): del h5_files[k]
+for k in ['PapalexiSatija2021_eccite_arrayed_protein', 'PapalexiSatija2021_eccite_protein', 'FrangiehIzar2021_protein']:  # we only look at RNA for this
+	if k in h5_files.keys(): del h5_files[k]
+for k in ['gene_scores', 'ChromVar', 'LSI_embedding', 'markerpeak_target', 'peak_bc']:  # exclude atac
+	if k in h5_files.keys(): del h5_files[k]
+for k in ['GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 'GehringPachter2019']:  # complex / problematic datasets
+	if k in h5_files.keys(): del h5_files[k]
+repoweiss_h5_files = {}
+for k in ['ReplogleWeissman2022_K562_essential', 'ReplogleWeissman2022_K562_gwps', 'ReplogleWeissman2022_rpe1']:  # too big to handle easily
+	repoweiss_h5_files[k] = h5_files[k]
+	if k in h5_files.keys(): del h5_files[k]
+
+print(list(h5_files.keys()))
+
+def plot_heatmap(tab, title):
+	fig, ax = pl.subplots(figsize=[10,8], dpi=120)
+	sns.heatmap(tab, robust=True, ax=ax)
+	ax.set_xticks(np.arange(len(tab))+.5)
+	ax.set_xticklabels(tab.index, fontsize=6)
+	ax.set_yticks(np.arange(len(tab))+.5)
+	ax.set_yticklabels(tab.index, fontsize=6)
+	ax.set_title(title)
+
+rule all:
+	input:
+		expand(SDIR+'tmp_data_{dataset}.h5', dataset=h5_files.keys()),  # create intermediate files
+		expand('tables/pairwise_pca_distances_{dataset}_tables.csv', dataset=h5_files.keys())  # needed for e-statistics
+
+rule prep_data:
+	output:
+		SDIR+'tmp_data_{dataset}.h5'
+	resources:
+		partition='medium',
+		mem='64g',
+		time='2-00:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	run:
+		# load data
+		path = h5_files[wildcards.dataset]
+		adata = sc.read(path)
+		adata.layers['counts'] = adata.X.copy()
+
+		# basic qc and pp
+		sc.pp.filter_cells(adata, min_counts=1000)
+		sc.pp.normalize_per_cell(adata)
+		sc.pp.filter_genes(adata, min_cells=50)
+		sc.pp.log1p(adata)
+
+		# high class imbalance
+		adata = equal_subsampling(adata, 'perturbation', N_min=50)
+		sc.pp.filter_genes(adata, min_cells=3)  # sanity cleaning
+
+		# select HVGs
+		n_var_max = 2000  # max total features to select
+		sc.pp.highly_variable_genes(adata, n_top_genes=n_var_max, subset=False, flavor='seurat_v3', layer='counts')
+		sc.pp.pca(adata, use_highly_variable=True)
+		sc.pp.neighbors(adata)
+		adata.write(output[0])
+
+rule e_testing:
+	input: SDIR+'tmp_data_{dataset}.h5'
+	output: 'figures/etest_{dataset}.pdf', 'tables/etest_{dataset}_tables.csv'
+	resources:
+		partition='medium',
+		mem='168g',
+		time='1-23:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		adata = sc.read(input[0])
+		tab = etest(adata, runs=100)
+
+		# plot result
+		pseudocount = 1
+		tab['significant'] = tab.pvalue < 0.05
+		with sns.axes_style('whitegrid'):
+		    sns.scatterplot(data=tab, x=tab.edist+pseudocount, y=tab.pvalue, hue='significant')
+		pl.xlabel(f'Log {pseudocount}+E-distance to unperturbed')
+		sig = np.sum(tab['significant'])
+		total = len(tab)-1
+		pl.title(f'E-test results for {wildcards.dataset}\n{sig}/{total} are significant (pv<0.05)')
+		pl.xscale('log')
+		pl.ylabel('p-value')
+		pl.axhline(0.05, c='r', linestyle='--')
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		pl.close()
+
+		# export table
+		tab.to_csv(output[1])
+
+rule pairwise_pca_distances:
+	input: SDIR+'tmp_data_{dataset}.h5'
+	output: 'figures/pairwise_pca_distances_{dataset}.pdf', 'tables/pairwise_pca_distances_{dataset}_tables.csv'
+	resources:
+		partition='short',
+		mem='164g',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		adata = sc.read(input[0])
+		tab = pairwise_pca_distances(adata, 'perturbation', obsm_key='X_pca')
+		tab.to_csv(output[1])
+		# plot
+		tab = cluster_matrix(1/tab, 'both')
+		plot_heatmap(tab, wildcards.dataset+' mean pairwise pca distance')
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		pl.close()

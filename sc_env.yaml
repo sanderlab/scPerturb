@@ -38,6 +38,7 @@ dependencies:
   - bioconductor-deseq2
   - scrublet
   - velocyto.py
+  - pyyaml
   # pip install decoupler
   # pip install goatools
   # pip install statannotations

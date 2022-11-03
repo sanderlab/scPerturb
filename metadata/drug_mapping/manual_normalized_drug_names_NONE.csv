@@ -1,0 +1,15 @@
+,Index,Name,Dataset,Found Names,Found Name IDs,Match Type,Edit Distance,Query Time,ChEMBL,Manual normalization
+5,18,AG-490 (Tyrphostin B42),SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.1575475490000002,CHEMBL1257042,
+9,28,BMS-536924,SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.1066735160000007,CHEMBL401930,
+10,29,AG-14361,SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.0956528359999993,CHEMBL65892,
+13,46,PD98059,SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.0949210680000014,CHEMBL35482,
+14,52,Glesatinib?(MGCD265),SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.1505946829999978,CHEMBL3989914,
+16,55,S3I-201,SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.0899651639999987,CHEMBL477936;CHEMBL1156461,
+21,67,CEP-33779,SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.0998719219999983,CHEMBL2062804,
+28,98,ZM 447439,SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.0999933139999988,CHEMBL202721,
+30,107,PF-3845,SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.089947145,CHEMBL1651524,
+33,113,WHI-P154,SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.0953638480000016,CHEMBL473773,
+43,162,Bisindolylmaleimide IX (Ro 31-8220 Mesylate),SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.2637285079999998,CHEMBL6291,
+47,190,SL-327,SrivatsanTrapnell2020_sciplex3,[],[[None]],none,,0.0858740659999988,CHEMBL261237,
+58,221,BMP4,GehringPachter2019,[],[[None]],none,,0.0867224819999989,CHEMBL5350,target
+59,224,osimertinib+crizotinib,AissaBenevolenskaya2021,[],[[None]],none,,0.1898020679999987,CHEMBL3353410;CHEMBL601719,

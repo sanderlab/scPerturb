@@ -1,0 +1,7 @@
+Index,Name,Dataset,Found Names,Found Name IDs,Match Type,Edit Distance,Query Time,Manual normalization,ChEMBL
+2,AZD5591,McFarlandTshemiak2020_all_expts_combined,['azd5991'],[['CHEMBL4297482']],partial,0.1428571428571428,0.1421203690000005,typo,CHEMBL4297482
+14,Nutlin,SrivatsanTrapnell2020_sciplex2,"['nutlin2', 'nutlin3']","[['CHEMBL407632'], ['CHEMBL191334']]",partial,0.1428571428571428,0.1328132610000025,ambiguous,CHEMBL407632;CHEMBL191334
+110,A-366,SrivatsanTrapnell2020_sciplex3,['a3665'],[['CHEMBL84617']],partial,0.2,0.1228406940000006,typo,CHEMBL84617
+189,M344,SrivatsanTrapnell2020_sciplex3,"['m4344', 'me344']","[['CHEMBL4650286'], ['CHEMBL3545320']]",partial,0.2,0.1265070490000006,typo;ambiguous,CHEMBL4650286;CHEMBL3545320
+198,RG108,SrivatsanTrapnell2020_sciplex3,['rg1068'],[['CHEMBL1201616']],partial,0.1666666666666666,0.1329172340000006,typo,CHEMBL1201616
+211,Chloride,SrivatsanTrapnell2020_sciplex4,['chloridine'],[['CHEMBL36']],partial,0.2,0.1444522549999973,ambiguous,CHEMBL36
