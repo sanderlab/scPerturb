@@ -98,12 +98,12 @@ def process_GehringPachter2019(DIR, WDIR):
             vec['nperts'] +=1
         
         if vec['RA'] ==0:
-            vec['dose_value_3'] = 0
+            vec['dose_value_4'] = 0
         elif vec['RA'] ==1:
-            vec['dose_value_3'] = 2
+            vec['dose_value_4'] = 2
             vec['nperts'] +=1
         elif vec['RA'] ==2:
-            vec['dose_value_3'] = 10
+            vec['dose_value_4'] = 10
             vec['nperts'] +=1
         adata.obs.iloc[i,:] = vec
         #break
