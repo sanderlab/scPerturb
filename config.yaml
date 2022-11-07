@@ -1,5 +1,5 @@
 ---
-  DOWNDIR: "/fast/work/users/peidlis_c/data/perturbation_resource_paper/"  # Directory where u downloaded the data from scperturb.org
+  DOWNDIR: "/fast/work/users/peidlis_c/data/perturbation_resource_paper/"  # Directory where you downloaded the data from scperturb.org
   DIR: "/fast/scratch/users/peidlis_c/perturbation_resource_paper/"  # Directory where many terabytes of data can be dumped
   WDIR: "/fast/work/users/peidlis_c/data/perturbation_resource_paper/"  # Directory where raw supplement and processed data is exported to
   CDIR: "/fast/work/users/peidlis_c/projects/perturbation_resource_paper/scPerturb/"  # Directory where you cloned this repo to.
