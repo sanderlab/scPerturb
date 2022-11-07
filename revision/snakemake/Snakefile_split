@@ -1,0 +1,218 @@
+# snakemake --profile=cubi-v1 --jobs 60 -k --use-conda --restart-times 0 --snakefile Snakefile_split
+# snakemake --forceall --dag | dot -Tpdf > snake_dag.pdf
+# snakemake --forceall --rulegraph | dot -Tpdf > snake_rulegraph.pdf
+
+import pandas as pd
+import numpy as np
+import os
+import sys
+import matplotlib.pyplot as pl
+
+SDIR = "/fast/scratch/users/peidlis_c/perturbation_resource_paper/"
+WDIR = '/fast/work/users/peidlis_c/data/perturbation_resource_paper/'  # data directory on work
+CDIR = '/fast/work/users/peidlis_c/projects/perturbation_resource_paper/single_cell_perturbation_data/code/'  # code directory on work
+UTILS = "/fast/work/users/peidlis_c/utils/single_cell_rna_seq/scrnaseq_utils/"  # my utils
+sys.path.insert(1, UTILS)
+from scrnaseq_util_functions import *
+sys.path.insert(1, CDIR)
+from utils import *
+
+# dict mapping dataset names to their paths
+h5_files = {}
+for path, subdirs, files in os.walk(WDIR):
+	for name in files:
+		if '.h5' in name:
+			h5_files[name[:-3]] = os.path.join(path, name)
+for k in ['exampledataset', 'NormanWeissman2019_raw']:
+    if k in h5_files.keys(): del h5_files[k]
+for k in ['PapalexiSatija2021_eccite_arrayed_protein', 'PapalexiSatija2021_eccite_protein', 'FrangiehIzar2021_protein']:
+    if k in h5_files.keys(): del h5_files[k]
+for k in ['gene_scores', 'ChromVar', 'LSI_embedding', 'markerpeak_target', 'peak_bc']:
+    if k in h5_files.keys(): del h5_files[k]
+print(list(h5_files.keys()))
+
+def plot_heatmap(tab, title):
+	fig, ax = pl.subplots(figsize=[10,8], dpi=120)
+	sns.heatmap(tab, robust=True, ax=ax)
+	ax.set_xticks(np.arange(len(tab))+.5)
+	ax.set_xticklabels(tab.index, fontsize=6)
+	ax.set_yticks(np.arange(len(tab))+.5)
+	ax.set_yticklabels(tab.index, fontsize=6)
+	ax.set_title(title)
+
+rule all:
+	input:
+		expand(SDIR+'tmp_split_data_{dataset}.h5', dataset=h5_files.keys()),
+		expand('figures/split_{mode}_{dataset}.pdf', dataset=h5_files.keys(),
+				mode=['simple_confusion', 'pseudobulk_distances', 'pseudobulk_correlations',
+				'looc_confusion', 'graph_entropy', 'pairwise_pca_distances'])
+
+rule pairwise_pca_distances:
+	input: SDIR+'tmp_{split}data_{dataset}.h5'
+	output: 'figures/{split}pairwise_pca_distances_{dataset}.pdf', 'tables/{split}pairwise_pca_distances_{dataset}_tables.csv'
+	resources:
+		partition='short',
+		mem='168g',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		adata = sc.read(input[0])
+		tab = pairwise_pca_distances(adata, 'perturbation', obsm_key='X_pca', cluster=True)
+		# plot
+		plot_heatmap(tab, wildcards.dataset+' pseudobulk correlations')
+		# export
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		tab.to_csv(output[1])
+		pl.close()
+
+rule pseudobulk_correlations:
+	input: SDIR+'tmp_{split}data_{dataset}.h5'
+	output: 'figures/{split}pseudobulk_correlations_{dataset}.pdf', 'tables/{split}pseudobulk_correlations_{dataset}_tables.csv'
+	resources:
+		partition='short',
+		mem='168g',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		adata = sc.read(input[0])
+		bdata = pseudo_bulk(adata, ['perturbation'])
+		sc.pp.pca(bdata)
+		Z = bdata.obsm['X_pca']
+		df = pd.DataFrame(Z, index=bdata.obs.perturbation)
+		pca_corr = df.T.corr()
+		tab = cluster_matrix(pca_corr, 'both')
+		# plot
+		plot_heatmap(tab, wildcards.dataset+' pseudobulk correlations')
+		# export
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		tab.to_csv(output[1])
+		pl.close()
+
+
+rule pseudobulk_distances:
+	input: SDIR+'tmp_{split}data_{dataset}.h5'
+	output: 'figures/{split}pseudobulk_distances_{dataset}.pdf', 'tables/{split}pseudobulk_distances_{dataset}_tables.csv'
+	resources:
+		partition='short',
+		mem='168g',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		adata = sc.read(input[0])
+		bdata = pseudo_bulk(adata, ['perturbation'])
+		sc.pp.pca(bdata)
+		Z = bdata.obsm['X_pca']
+		from sklearn.metrics import pairwise_distances
+		M = pairwise_distances(Z)
+		tab=pd.DataFrame(1/(M+1), index=bdata.obs.perturbation, columns=bdata.obs.perturbation)
+		tab = cluster_matrix(tab, 'both')
+		# plot
+		plot_heatmap(tab, wildcards.dataset+' pseudobulk distances')
+		# export
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		tab.to_csv(output[1])
+		pl.close()
+
+rule simple_confusion:
+	input: SDIR+'tmp_{split}data_{dataset}.h5'
+	output: 'figures/{split}simple_confusion_{dataset}.pdf', 'tables/{split}simple_confusion_{dataset}_tables.csv'
+	resources:
+		partition='short',
+		mem='168g',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		adata = sc.read(input[0])
+		conf_mat, classes = simple_classifier_confusion(adata, 'X_pca', 'perturbation', test_size_fraction=0.2, n_nodes=0, method='SVC',
+														symmetrize=False, col_normalize=False, cluster=False)
+		pl.figure(figsize=[10,8])
+		tab = pd.DataFrame(zscore(conf_mat.values, axis=0), classes, classes)
+		tab = 0.5 * (tab+tab.T)
+		tab = cluster_matrix(tab, 'both')
+		raw_tab = pd.DataFrame(conf_mat, index=classes, columns=classes)
+		# plot
+		plot_heatmap(tab, wildcards.dataset+' simple confusion')
+		# export
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		raw_tab.to_csv(output[1])
+		pl.close()
+
+rule looc_confusion:
+	input: SDIR+'tmp_{split}data_{dataset}.h5'
+	output: 'figures/{split}looc_confusion_{dataset}.pdf', 'tables/{split}looc_confusion_{dataset}_tables.csv'
+	resources:
+		partition='short',
+		mem='168g',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		adata = sc.read(input[0])
+		tab = leave_one_out_classification(adata, 'X_pca', 'perturbation', method='SVC', plot=True, show=False, plot_each=False)
+		# plot
+		plot_heatmap(tab, wildcards.dataset+' looc')
+		# export
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		tab.to_csv(output[1])
+		pl.close()
+
+rule graph_entropy:
+	input: SDIR+'tmp_{split}data_{dataset}.h5'
+	output: 'figures/{split}graph_entropy_{dataset}.pdf', 'tables/{split}graph_entropy_{dataset}_tables.csv'
+	resources:
+		partition='short',
+		mem='168g',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		adata = sc.read(input[0])
+		tab = simil(adata, groupby='perturbation', plot=False)
+		# plot
+		plot_heatmap(tab, wildcards.dataset+' Graph label entropy')
+		# export
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		tab.to_csv(output[1])
+		pl.close()
+
+rule prep_data:
+	output:
+		split=SDIR+'tmp_split_data_{dataset}.h5'
+	resources:
+		partition='short',
+		mem='168g',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		path = h5_files[wildcards.dataset]
+		adata = sc.read(path)
+		adata.layers['counts'] = adata.X.copy()
+
+		# basic qc and pp
+		sc.pp.filter_cells(adata, min_counts=1000)
+		sc.pp.normalize_per_cell(adata)
+		sc.pp.filter_genes(adata, min_cells=50)
+		sc.pp.log1p(adata)
+
+		# high class imbalance
+		adata = equal_subsampling(adata, 'perturbation', N_min=50)
+		sc.pp.filter_genes(adata, min_cells=3)  # sanity cleaning
+
+		# select HVGs
+		n_var_max = 2000  # max total features to select
+		sc.pp.highly_variable_genes(adata, n_top_genes=n_var_max, subset=False, flavor='seurat_v3', layer='counts')
+		sc.pp.pca(adata, use_highly_variable=True)
+		sc.pp.neighbors(adata)
+
+		# split classes by 50%
+		N = int(np.min(adata.obs.perturbation.value_counts())/2)
+		adata.obs['perturbation'] = adata.obs.perturbation.astype(str)
+		for perturbation in pd.unique(adata.obs.perturbation):
+		    mask = np.random.choice(adata.obs_names[adata.obs.perturbation==perturbation], N, replace=False)
+		    adata.obs.loc[mask, 'perturbation'] = f'{perturbation}_X'
+		adata.write(output['split'])

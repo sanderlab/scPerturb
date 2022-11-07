@@ -2,6 +2,8 @@
 .snakemake/
 *.out
 .DS_Store
+revision/snakemake/tables/
+revision/snakemake/figures/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
