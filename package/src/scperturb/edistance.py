@@ -106,7 +106,10 @@ def equal_subsampling(adata, obs_key, N_min=None):
     """
 
     counts = adata.obs[obs_key].value_counts()
-    groups = counts.index[counts>=N_min]  # ignore groups with less than N_min cells to begin with
+    if N_min is not None:
+        groups = counts.index[counts>=N_min]  # ignore groups with less than N_min cells to begin with
+    else:
+        groups=counts.index
     # We select downsampling target counts by min-max, i.e.
     # the largest N such that every group has at least N cells before downsampling.
     N = np.min(counts)
