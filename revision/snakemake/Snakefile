@@ -13,12 +13,17 @@ import matplotlib.pyplot as pl
 
 SDIR = "/fast/scratch/users/peidlis_c/perturbation_resource_paper/"
 WDIR = '/fast/work/users/peidlis_c/data/perturbation_resource_paper/'  # data directory on work
-CDIR = '/fast/work/users/peidlis_c/projects/perturbation_resource_paper/single_cell_perturbation_data/code/'  # code directory on work
+CDIR = '/fast/work/users/peidlis_c/projects/perturbation_resource_paper/scPerturb/'  # code directory on work
 UTILS = "/fast/work/users/peidlis_c/utils/single_cell_rna_seq/scrnaseq_utils/"  # my utils
+# Stefan's utils
 sys.path.insert(1, UTILS)
 from scrnaseq_util_functions import *
+# project utils
 sys.path.insert(1, CDIR)
 from utils import *
+# scperturb utils
+sys.path.insert(1, CDIR+'/package/src/')
+from scperturb import *
 
 # dict mapping dataset names to their paths
 h5_files = {}
@@ -54,31 +59,67 @@ def plot_heatmap(tab, title):
 
 rule all:
 	input:
+		expand(SDIR+'tmp_data_{dataset}.h5', dataset=h5_files.keys())
 		# expand(SDIR+'tmp_data_{dataset}.h5', dataset=repoweiss_h5_files.keys()),
-		expand('tables/{mode}_{dataset}_tables.csv', dataset=list(h5_files.keys())+list(repoweiss_h5_files.keys()),
-			   mode=[
-		# 	   # 'etest',
-		# 	   #'earth_mover_distances',
-			   'pairwise_pca_distances',
-		# 	   # 'pairwise_mean_pca_distances', ,
-		# 	   # 'simple_confusion', 'simple_test_confusion', 'looc_confusion',
-		# 	   # 'pseudobulk_correlations', 'graph_entropy'
-			   ]),
+		# expand('tables/{mode}_{dataset}_tables.csv', dataset=list(h5_files.keys())+list(repoweiss_h5_files.keys()),
+		# 	   mode=[
+		# # 	   # 'etest',
+		# # 	   #'earth_mover_distances',
+		# 	   'pairwise_pca_distances',
+		# # 	   # 'pairwise_mean_pca_distances', ,
+		# # 	   # 'simple_confusion', 'simple_test_confusion', 'looc_confusion',
+		# # 	   # 'pseudobulk_correlations', 'graph_entropy'
+		# 	   ]),
 		# expand('figures/{mode}_{dataset}.pdf', dataset=h5_files.keys(),
 		# 	   mode=['umap', 'pseudobulk_umap'
 		# 	   ])
 
-# rule prep_data:
+rule prep_data:
+	output:
+		SDIR+'tmp_data_{dataset}.h5'
+	resources:
+		partition='medium',
+		mem='64g',##str(mem)+'g',
+		time='2-00:00:00',
+		mem_mb=64000,#mem*1000,
+		disk_mb=64000#mem*1000
+	run:
+		path = h5_files[wildcards.dataset]
+		adata = sc.read(path)
+		adata.layers['counts'] = adata.X.copy()
+
+		# basic qc and pp
+		sc.pp.filter_cells(adata, min_counts=1000)
+		sc.pp.normalize_per_cell(adata)
+		sc.pp.filter_genes(adata, min_cells=50)
+		sc.pp.log1p(adata)
+
+		# high class imbalance
+		adata = equal_subsampling(adata, 'perturbation', N_min=50)
+		sc.pp.filter_genes(adata, min_cells=3)  # sanity cleaning
+
+		# select HVGs
+		n_var_max = 2000  # max total features to select
+		sc.pp.highly_variable_genes(adata, n_top_genes=n_var_max, subset=False, flavor='seurat_v3', layer='counts')
+		sc.pp.pca(adata, use_highly_variable=True)
+		sc.pp.neighbors(adata)
+
+		# annotate split for evaluation
+		random_split(adata)
+
+		adata.write(output[0])
+
+# rule prep_data_repoweiss:
 # 	output:
 # 		SDIR+'tmp_data_{dataset}.h5'
 # 	resources:
-# 		partition='medium',
-# 		mem='64g',##str(mem)+'g',
+# 		partition='highmem',
+# 		mem='500g',##str(mem)+'g',
 # 		time='2-00:00:00',
-# 		mem_mb=64000,#mem*1000,
-# 		disk_mb=64000#mem*1000
+# 		mem_mb=500000,#mem*1000,
+# 		disk_mb=500000#mem*1000
 # 	run:
-# 		path = h5_files[wildcards.dataset]
+# 		path = repoweiss_h5_files[wildcards.dataset]
 # 		adata = sc.read(path)
 # 		adata.layers['counts'] = adata.X.copy()
 #
@@ -98,37 +139,6 @@ rule all:
 # 		sc.pp.pca(adata, use_highly_variable=True)
 # 		sc.pp.neighbors(adata)
 # 		adata.write(output[0])
-
-rule prep_data_repoweiss:
-	output:
-		SDIR+'tmp_data_{dataset}.h5'
-	resources:
-		partition='highmem',
-		mem='500g',##str(mem)+'g',
-		time='2-00:00:00',
-		mem_mb=500000,#mem*1000,
-		disk_mb=500000#mem*1000
-	run:
-		path = repoweiss_h5_files[wildcards.dataset]
-		adata = sc.read(path)
-		adata.layers['counts'] = adata.X.copy()
-
-		# basic qc and pp
-		sc.pp.filter_cells(adata, min_counts=1000)
-		sc.pp.normalize_per_cell(adata)
-		sc.pp.filter_genes(adata, min_cells=50)
-		sc.pp.log1p(adata)
-
-		# high class imbalance
-		adata = equal_subsampling(adata, 'perturbation', N_min=50)
-		sc.pp.filter_genes(adata, min_cells=3)  # sanity cleaning
-
-		# select HVGs
-		n_var_max = 2000  # max total features to select
-		sc.pp.highly_variable_genes(adata, n_top_genes=n_var_max, subset=False, flavor='seurat_v3', layer='counts')
-		sc.pp.pca(adata, use_highly_variable=True)
-		sc.pp.neighbors(adata)
-		adata.write(output[0])
 
 rule e_testing:
 	input: SDIR+'tmp_data_{dataset}.h5'

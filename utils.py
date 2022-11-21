@@ -15,6 +15,18 @@ from shutil import copyfileobj
 from chembl_webresource_client.new_client import new_client
 
 
+def random_split(adata, key='perturbation', inplace=True):
+    # Creates a new column "{key}_X" where 50% of cells randomly get a "_X" appended to their value of {key}.
+    adata = adata if inplace else adata.copy()
+    N = int(np.min(adata.obs[key].value_counts())/2)
+    adata.obs[f'{key}_X'] = adata.obs[key].astype(str)
+    for group in pd.unique(adata.obs[key]):
+        mask = np.random.choice(adata.obs_names[adata.obs[key]==group], N, replace=False)
+        adata.obs.loc[mask, f'{key}_X'] = f'{group}_X'
+    if not inplace:
+        return adata
+
+
 def query_chembl_drugs(names, qkeys=['pref_name', 'molecule_chembl_id', 'molecule_type', 'usan_stem_definition']):
     '''
     Returns results (pandas.DataFrame), amb_results (pandas.DataFrame), not_found (list).
