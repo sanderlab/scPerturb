@@ -1,0 +1,58 @@
+name: scPerturb dataset info
+datasets:
+  dataset_info:
+    path: "scperturb_dataset_info_test.csv"
+default-view: dataset_info
+views:
+  dataset_info:
+    dataset: dataset_info
+    desc: |
+      ### scPerturb
+      This table contains info about single-cell perturbation datasets included
+      in [scPerturb](http://projects.sanderlab.org/scperturb/).
+      For more info see [Github](https://github.com/sanderlab/scPerturb) or
+      [paper](https://doi.org/10.1101/2022.08.20.504663).
+    page-size: 25
+    render-table:
+      columns:
+        Title:
+          link-to-url: "{doi_url}"
+        disease:
+          display-mode: detail
+        celltype:
+          display-mode: detail
+        Tissues:
+          display-mode: detail
+        tissue_type:
+          display-mode: detail
+        Organisms:
+          display-mode: detail
+        doi_url:
+          display-mode: hidden
+        multiple_time_points:
+          display-mode: hidden
+        multiple_concentrations:
+          display-mode: hidden
+        combined_perturbations:
+          display-mode: hidden
+        Date_of_Submission :
+          display-mode: hidden
+        Cancer:
+          plot:
+            heatmap:
+              scale: ordinal
+              domain:
+                - y
+                - n
+              range:
+                - "#2CA02C"
+                - "#D62728"
+        NoPs:
+          ellipsis: 5
+        Year:
+          plot:
+            ticks:
+              scale: linear
+              domain:
+                - 2016
+                - 2022

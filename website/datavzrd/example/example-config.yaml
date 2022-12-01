@@ -1,0 +1,91 @@
+name: My oscar report
+datasets:
+  oscars:
+    path: "data/oscars.csv"
+    links:
+      link to oscar plot:
+        column: age
+        view: oscar-plot
+      link to movie:
+        column: movie
+        table-row: movies/Title
+  movies:
+    path: "data/movies.csv"
+    links:
+      link to oscar entry:
+        column: Title
+        table-row: oscars/movie
+default-view: oscars
+views:
+  oscars:
+    dataset: oscars
+    desc: |
+      ### All winning oscars beginning in the year 1929.
+      This table contains *all* winning oscars for best actress and best actor.
+    page-size: 25
+    render-table:
+      columns:
+        index(0):
+          display-mode: hidden
+        regex('birth_.+'):
+          display-mode: detail
+        age:
+          plot:
+            ticks:
+              scale: linear
+              domain:
+                - 20
+                - 100
+        name:
+          link-to-url: "https://lmgtfy.app/?q=Is {name} in {movie}?"
+        movie:
+          link-to-url: "https://de.wikipedia.org/wiki/{value}"
+        award:
+          plot:
+            heatmap:
+              scale: ordinal
+              domain:
+                - Best actor
+                - Best actress
+              range:
+                - "#add8e6"
+                - "#ffb6c1"
+  oscar-plot:
+    dataset: oscars
+    desc: |
+      ## My beautiful oscar scatter plot
+      *So many great actors and actresses*
+    render-plot:
+      spec-path: "specs/oscars.vl.json"
+  movies:
+    dataset: movies
+    render-table:
+      columns:
+        Genre:
+          ellipsis: 15
+        imdbID:
+          link-to-url: "https://www.imdb.com/title/{value}/"
+        Title:
+          link-to-url: "https://de.wikipedia.org/wiki/{value}"
+        imdbRating:
+          precision: 1
+          plot:
+            bars:
+              scale: linear
+              domain:
+                - 1
+                - 10
+        Rated:
+          plot-view-legend: true
+          plot:
+            heatmap:
+              scale: ordinal
+              color-scheme: accent
+        Runtime:
+          custom-path: "specs/time-formatter.js"
+  movies-plot:
+    dataset: movies
+    desc: |
+      All movies with its *runtime* and *ratings* plotted over *time*.
+    render-plot:
+      spec-path: "specs/movies.vl.json"
