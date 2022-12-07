@@ -8,22 +8,29 @@ views:
     dataset: dataset_info
     desc: |
       ### scPerturb
-      This table contains info about single-cell perturbation datasets included
-      in [scPerturb](http://projects.sanderlab.org/scperturb/).
-      For more info see [Github](https://github.com/sanderlab/scPerturb) or
-      [paper](https://doi.org/10.1101/2022.08.20.504663).
+      This table contains info about single-cell perturbation datasets included in [scPerturb](http://projects.sanderlab.org/scperturb/).
+      You can use the blue download buttons on the left to download a dataset of interest. You can also download this table as an excel sheet with the second button on the top right of this page.
+      For more info see [Github](https://github.com/sanderlab/scPerturb) or our [paper](https://doi.org/10.1101/2022.08.20.504663).
     page-size: 25
     render-table:
       columns:
+        Download Link:
+          link-to-url: "https://zenodo.org/record/{Zenodo ID}/files/{Full index}.{File Extension}"
+        Full index:
+          display-mode: hidden
+        Zenodo ID:
+          display-mode: hidden
+        File Extension:
+          display-mode: hidden
         Title:
           link-to-url: "{doi_url}"
-        disease:
+        Disease:
           display-mode: detail
-        celltype:
+        Cell Type:
           display-mode: detail
         Tissues:
           display-mode: detail
-        tissue_type:
+        Tissue Type:
           display-mode: detail
         Organisms:
           display-mode: detail
@@ -37,6 +44,22 @@ views:
           display-mode: hidden
         Date_of_Submission :
           display-mode: hidden
+        Modality:
+          plot:
+            heatmap:
+              scale: ordinal
+              domain:
+                - "RNA"
+                - "RNA + protein (RNA)"
+                - "ATAC"
+                - "ATAC + protein"
+                - "RNA + protein (protein)"
+              range:
+                - "#1f77b4"
+                - "#1f77b4"
+                - "#ff7f0e"
+                - "#bcbd22"
+                - "#d62728"
         Cancer:
           plot:
             heatmap:
@@ -47,7 +70,7 @@ views:
               range:
                 - "#2CA02C"
                 - "#D62728"
-        NoPs:
+        Number Of Perturbations:
           ellipsis: 5
         Year:
           plot:
@@ -55,4 +78,4 @@ views:
               scale: linear
               domain:
                 - 2016
-                - 2022
+                - 2023

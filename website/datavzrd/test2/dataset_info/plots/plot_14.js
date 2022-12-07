@@ -1,0 +1,1 @@
+let show_plot_14=true;let plot_14={"$schema":"https://vega.github.io/schema/vega-lite/v4.json","width":"container","layer":[{"data":{"values":[{"key":"y","value":30},{"key":"n","value":14}]},"mark":"bar","encoding":{"x":{"field":"key","sort":{"field":"value","order":"descending"},"title":"Cancer"},"y":{"field":"value","type":"quantitative","title":null}}}]}

@@ -1,0 +1,1 @@
+let show_plot_20=true;let plot_20={"$schema":"https://vega.github.io/schema/vega-lite/v4.json","width":"container","layer":[{"data":{"values":[{"key":"n","value":40},{"key":"y","value":4}]},"mark":"bar","encoding":{"x":{"field":"key","sort":{"field":"value","order":"descending"},"title":"multiple_concentrations"},"y":{"field":"value","type":"quantitative","title":null}}}]}
