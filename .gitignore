@@ -1,4 +1,5 @@
 # custom
+data/
 .snakemake/
 *.out
 .DS_Store

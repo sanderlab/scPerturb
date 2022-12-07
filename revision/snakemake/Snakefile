@@ -2,53 +2,32 @@
 # snakemake --forceall --dag | dot -Tpdf > snake_dag.pdf
 # snakemake --forceall --rulegraph | dot -Tpdf > snake_rulegraph.pdf
 
-mem = 168# 2000
-partition = 'short'#''highmem
+mem = 168 # 2000
+partition = 'short'  #'highmem'
 
 import pandas as pd
 import numpy as np
 import os
 import sys
-import matplotlib.pyplot as pl
 
 SDIR = "/fast/scratch/users/peidlis_c/perturbation_resource_paper/"
 WDIR = '/fast/work/users/peidlis_c/data/perturbation_resource_paper/'  # data directory on work
 CDIR = '/fast/work/users/peidlis_c/projects/perturbation_resource_paper/scPerturb/'  # code directory on work
 UTILS = "/fast/work/users/peidlis_c/utils/single_cell_rna_seq/scrnaseq_utils/"  # my utils
-# Stefan's utils
-sys.path.insert(1, UTILS)
-from scrnaseq_util_functions import *
-# project utils
-sys.path.insert(1, CDIR)
-from utils import *
-# scperturb utils
-sys.path.insert(1, CDIR+'/package/src/')
-from scperturb import *
+ZENODO_URL = 'https://zenodo.org/record/7278143/'  # V1.1
 
-# dict mapping dataset names to their paths
-h5_files = {}
-for path, subdirs, files in os.walk(WDIR):
-	for name in files:
-		if '.h5ad' in name:
-			h5_files[name[:-5]] = os.path.join(path, name)
-for k in ['exampledataset', 'NormanWeissman2019_raw']:
-	if k in h5_files.keys(): del h5_files[k]
-for k in ['PapalexiSatija2021_eccite_arrayed_protein', 'PapalexiSatija2021_eccite_protein', 'FrangiehIzar2021_protein']:
-	if k in h5_files.keys(): del h5_files[k]
-for k in ['gene_scores', 'ChromVar', 'LSI_embedding', 'markerpeak_target', 'peak_bc']:
-	if k in h5_files.keys(): del h5_files[k]
-for k in ['GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 'GehringPachter2019']:
-	if k in h5_files.keys(): del h5_files[k]
-repoweiss_h5_files = {}
-f = list(h5_files.keys())
-for k in f:
-	if 'Replogle' in k:
-		repoweiss_h5_files[k] = h5_files[k]
-		del h5_files[k]
-
-print(list(h5_files.keys()))
+# load list of RNA datasets
+df = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx', index_col=[0,1])
+sdf = df[df['Modality = Data type'].isin(['RNA', 'RNA + protein (RNA)'])]
+datasets = [a+'_'+b for (a,b), row in sdf.iterrows()]
+for dataset in ['AissaBenevolenskaya2021_GSM2406681_10X010', 'GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 'GehringPachter2019']:
+	if dataset in datasets:
+		datasets.remove(dataset)
+print(datasets)
 
 def plot_heatmap(tab, title):
+	import seaborn as sns
+	import matplotlib.pyplot as pl
 	fig, ax = pl.subplots(figsize=[10,8], dpi=120)
 	sns.heatmap(tab, robust=True, ax=ax)
 	ax.set_xticks(np.arange(len(tab))+.5)
@@ -59,24 +38,30 @@ def plot_heatmap(tab, title):
 
 rule all:
 	input:
-		expand(SDIR+'tmp_data_{dataset}.h5', dataset=h5_files.keys())
-		# expand(SDIR+'tmp_data_{dataset}.h5', dataset=repoweiss_h5_files.keys()),
-		# expand('tables/{mode}_{dataset}_tables.csv', dataset=list(h5_files.keys())+list(repoweiss_h5_files.keys()),
-		# 	   mode=[
-		# # 	   # 'etest',
-		# # 	   #'earth_mover_distances',
-		# 	   'pairwise_pca_distances',
-		# # 	   # 'pairwise_mean_pca_distances', ,
-		# # 	   # 'simple_confusion', 'simple_test_confusion', 'looc_confusion',
-		# # 	   # 'pseudobulk_correlations', 'graph_entropy'
-		# 	   ]),
-		# expand('figures/{mode}_{dataset}.pdf', dataset=h5_files.keys(),
-		# 	   mode=['umap', 'pseudobulk_umap'
-		# 	   ])
+		expand(SDIR+'tmp_data_{dataset}.h5', dataset=datasets),
+		# expand(SDIR+'tmp_data_{dataset}.h5', dataset=repoweiss),
+		expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
+			   mode=['etest', 'edist'
+			   # 'earth_mover_distances', 'pairwise_mean_pca_distances', 'pseudobulk_correlations',
+			   # 'simple_confusion', 'simple_test_confusion', 'looc_confusion', 'graph_entropy'
+			   ]),
+		expand('figures/{mode}_{dataset}.pdf', dataset=datasets,
+			   mode=['umap'#, 'pseudobulk_umap'
+			   ])
 
-rule prep_data:
-	output:
-		SDIR+'tmp_data_{dataset}.h5'
+rule zenodo_download:
+	output: WDIR+'{dataset}.h5ad'
+	params:
+		sleeptime=np.random.uniform(1,20)
+	shell:
+		'''
+		sleep {params.sleeptime}
+		wget {ZENODO_URL}/files/{dataset}.h5ad -O {output}
+		'''
+
+rule prepare_data:
+	input: WDIR+'{dataset}.h5ad'
+	output: SDIR+'tmp_data_{dataset}.h5'
 	resources:
 		partition='medium',
 		mem='64g',##str(mem)+'g',
@@ -84,8 +69,12 @@ rule prep_data:
 		mem_mb=64000,#mem*1000,
 		disk_mb=64000#mem*1000
 	run:
-		path = h5_files[wildcards.dataset]
-		adata = sc.read(path)
+		import scanpy as sc
+		# project utils
+		sys.path.insert(1, CDIR)
+		from utils import equal_subsampling, random_split
+
+		adata = sc.read(input[0])
 		adata.layers['counts'] = adata.X.copy()
 
 		# basic qc and pp
@@ -94,7 +83,7 @@ rule prep_data:
 		sc.pp.filter_genes(adata, min_cells=50)
 		sc.pp.log1p(adata)
 
-		# high class imbalance
+		# subsample against high class imbalance
 		adata = equal_subsampling(adata, 'perturbation', N_min=50)
 		sc.pp.filter_genes(adata, min_cells=3)  # sanity cleaning
 
@@ -109,37 +98,6 @@ rule prep_data:
 
 		adata.write(output[0])
 
-# rule prep_data_repoweiss:
-# 	output:
-# 		SDIR+'tmp_data_{dataset}.h5'
-# 	resources:
-# 		partition='highmem',
-# 		mem='500g',##str(mem)+'g',
-# 		time='2-00:00:00',
-# 		mem_mb=500000,#mem*1000,
-# 		disk_mb=500000#mem*1000
-# 	run:
-# 		path = repoweiss_h5_files[wildcards.dataset]
-# 		adata = sc.read(path)
-# 		adata.layers['counts'] = adata.X.copy()
-#
-# 		# basic qc and pp
-# 		sc.pp.filter_cells(adata, min_counts=1000)
-# 		sc.pp.normalize_per_cell(adata)
-# 		sc.pp.filter_genes(adata, min_cells=50)
-# 		sc.pp.log1p(adata)
-#
-# 		# high class imbalance
-# 		adata = equal_subsampling(adata, 'perturbation', N_min=50)
-# 		sc.pp.filter_genes(adata, min_cells=3)  # sanity cleaning
-#
-# 		# select HVGs
-# 		n_var_max = 2000  # max total features to select
-# 		sc.pp.highly_variable_genes(adata, n_top_genes=n_var_max, subset=False, flavor='seurat_v3', layer='counts')
-# 		sc.pp.pca(adata, use_highly_variable=True)
-# 		sc.pp.neighbors(adata)
-# 		adata.write(output[0])
-
 rule e_testing:
 	input: SDIR+'tmp_data_{dataset}.h5'
 	output: 'figures/etest_{dataset}.pdf', 'tables/etest_{dataset}_tables.csv'
@@ -150,26 +108,48 @@ rule e_testing:
 		mem_mb=mem*1000,
 		disk_mb=mem*1000
 	run:
-		adata = sc.read(input[0])
-		tab = etest(adata, runs=100)
+		import scanpy as sc
+		import matplotlib.pyplot as pl
+		import seaborn as sns
+		# scperturb utils
+		sys.path.insert(1, CDIR+'/package/src/')
+		from scperturb import etest
 
-		# plot result
-		pseudocount = 1
-		tab['significant'] = tab.pvalue < 0.05
-		with sns.axes_style('whitegrid'):
-		    sns.scatterplot(data=tab, x=tab.edist+pseudocount, y=tab.pvalue, hue='significant')
-		pl.xlabel(f'Log {pseudocount}+E-distance to unperturbed')
-		sig = np.sum(tab['significant'])
-		total = len(tab)-1
-		pl.title(f'E-test results for {wildcards.dataset}\n{sig}/{total} are significant (pv<0.05)')
-		pl.xscale('log')
-		pl.ylabel('p-value')
-		pl.axhline(0.05, c='r', linestyle='--')
-		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-		pl.close()
+		adata = sc.read(input[0])
+		df = etest(adata, runs=1000)
+		df['log10_edist'] = np.log10(np.clip(df.edist, 0, np.infty))
 
 		# export table
-		tab.to_csv(output[1])
+		df.to_csv(output[1])
+
+		# plot result
+		with sns.axes_style('whitegrid'):
+			fig, ax = pl.subplots(1,1, figsize=[6,4], dpi=100)
+		sns.scatterplot(data=df[df.index!='control'], x='log10_edist', y='pvalue_adj', hue='significant_adj', palette={True: 'tab:green', False: 'tab:red'})
+		sig = np.sum(df['significant_adj'])
+		total = len(df)-1  # (removes control)
+		ax.set_xticks([0,1,2])
+		# ax.set_xticklabels([r'$10^0$', r'$10^1$', r'$10^2$'])
+		ax.set_xticklabels([1, 10, 100])
+		ax.set_title(f'E-tests for {dataset}\n{sig}/{total} are significant (pv<0.05)')
+		ax.set_ylabel('Adjusted p-value')
+		ax.set_xlabel('E-distance to unperturbed')
+		ax.legend(title='Significant')
+		ax.axhline(0.05, c='r', linestyle='--')
+		small = df[(df['significant_adj']) & (df.index!='control')].sort_values('edist').iloc[0]
+		big = df[(~df['significant_adj']) & (df.index!='control')].sort_values('edist').iloc[-1]
+		ax.annotate(f'E-distance\n{np.round(small.edist,2)}', xy=(small.log10_edist, small.pvalue_adj),  xycoords='data',
+		            xytext=(0.5, small.pvalue_adj), textcoords='data', fontsize=10,
+		            arrowprops=dict(facecolor='black', shrink=0.05),
+		            horizontalalignment='right', verticalalignment='center',
+		            )
+		ax.annotate(f'E-distance\n{np.round(big.edist,2)}', xy=(big.log10_edist, big.pvalue_adj),  xycoords='data',
+		            xytext=(2, big.pvalue_adj+0.2), textcoords='data', fontsize=10,
+		            arrowprops=dict(facecolor='black', shrink=0.05),
+		            horizontalalignment='right', verticalalignment='center',
+		            )
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		pl.close()
 
 rule move_some_earth:
 	input: SDIR+'tmp_data_{dataset}.h5'
@@ -181,7 +161,11 @@ rule move_some_earth:
 		mem_mb=mem*1000,
 		disk_mb=mem*1000
 	run:
+		import scanpy as sc
+		import matplotlib.pyplot as pl
+		import seaborn as sns
 		import ot
+		from tqdm import tqdm
 		from sklearn.metrics import pairwise_distances
 		def transport (source, target):
 			n = source.shape[-1]
@@ -207,6 +191,36 @@ rule move_some_earth:
 				df.loc[p2, p1] = cost
 		df.to_csv(output[0])
 
+rule edistance:
+	input: SDIR+'tmp_data_{dataset}.h5'
+	output: 'figures/edist_{dataset}.pdf', 'tables/edist_{dataset}_tables.csv'
+	resources:
+		partition=partition,
+		mem=str(mem)+'g',
+		time='4:00:00',
+		mem_mb=mem*1000,
+		disk_mb=mem*1000
+	run:
+		import scanpy as sc
+		import matplotlib.pyplot as pl
+		# scperturb utils
+		sys.path.insert(1, CDIR+'/package/src/')
+		from scperturb import edist
+		# project utils
+		sys.path.insert(1, CDIR)
+		from utils import cluster_matrix
+
+		adata = sc.read(input[0])
+		tab = edist(adata, 'perturbation', obsm_key='X_pca')
+		tab.to_csv(output[1])
+
+		# plot
+		tab = (1/tab).replace([np.inf, -np.inf], 0, inplace=False)
+		tab = cluster_matrix(tab, 'both')
+		plot_heatmap(tab, wildcards.dataset+' edistances')
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		pl.close()
+
 rule pairwise_mean_pca_distances:
 	input: SDIR+'tmp_data_{dataset}.h5'
 	output: 'figures/pairwise_mean_pca_distances_{dataset}.pdf', 'tables/pairwise_mean_pca_distances_{dataset}_tables.csv'
@@ -217,6 +231,12 @@ rule pairwise_mean_pca_distances:
 		mem_mb=mem*1000,
 		disk_mb=mem*1000
 	run:
+		import scanpy as sc
+		import matplotlib.pyplot as pl
+		# project utils
+		sys.path.insert(1, CDIR)
+		from utils import pairwise_mean_pca_distances, cluster_matrix
+
 		adata = sc.read(input[0])
 		tab = pairwise_mean_pca_distances(adata, 'perturbation', obsm_key='X_pca')
 		tab.to_csv(output[1])
@@ -224,25 +244,6 @@ rule pairwise_mean_pca_distances:
 		tab = (1/tab).replace([np.inf, -np.inf], 0, inplace=False)
 		tab = cluster_matrix(tab, 'both')
 		plot_heatmap(tab, wildcards.dataset+' pseudobulk pca distances')
-		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-		pl.close()
-
-rule pairwise_pca_distances:
-	input: SDIR+'tmp_data_{dataset}.h5'
-	output: 'figures/pairwise_pca_distances_{dataset}.pdf', 'tables/pairwise_pca_distances_{dataset}_tables.csv'
-	resources:
-		partition=partition,
-		mem=str(mem)+'g',
-		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
-	run:
-		adata = sc.read(input[0])
-		tab = pairwise_pca_distances(adata, 'perturbation', obsm_key='X_pca')
-		tab.to_csv(output[1])
-		# plot
-		tab = cluster_matrix(1/tab, 'both')
-		plot_heatmap(tab, wildcards.dataset+' mean pairwise pca distance')
 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
 		pl.close()
 
@@ -256,6 +257,9 @@ rule umap:
 		mem_mb=mem*1000,
 		disk_mb=mem*1000
 	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
 		adata = sc.read(input[0])
 		sc.tl.umap(adata)
 		scv.pl.scatter(adata, color='perturbation', show=False, dpi=120, legend_loc='right margin')
@@ -272,6 +276,13 @@ rule pseudobulk_umap:
 		mem_mb=mem*1000,
 		disk_mb=mem*1000
 	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
+		# project utils
+		sys.path.insert(1, CDIR)
+		from utils import pseudo_bulk
+
 		adata = sc.read(input[0])
 		bdata = pseudo_bulk(adata, ['perturbation'])
 		sc.pp.normalize_per_cell(bdata)
@@ -294,6 +305,12 @@ rule pseudobulk_correlations:
 		mem_mb=mem*1000,
 		disk_mb=mem*1000
 	run:
+		import scanpy as sc
+		import matplotlib.pyplot as pl
+		# project utils
+		sys.path.insert(1, CDIR)
+		from utils import pseudo_bulk, cluster_matrix
+
 		adata = sc.read(input[0])
 		bdata = pseudo_bulk(adata, ['perturbation'])
 		sc.pp.normalize_per_cell(bdata)
@@ -310,90 +327,90 @@ rule pseudobulk_correlations:
 		tab.to_csv(output[1])
 		pl.close()
 
-rule simple_confusion:
-	input: SDIR+'tmp_data_{dataset}.h5'
-	output: 'figures/simple_confusion_{dataset}.pdf', 'tables/simple_confusion_{dataset}_tables.csv'
-	resources:
-		partition=partition,
-		mem=str(mem)+'g',
-		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
-	run:
-		adata = sc.read(input[0])
-		conf_mat, classes = simple_classifier_confusion(adata, 'X_pca', 'perturbation', test_size_fraction=0.2, n_nodes=0, method='SVC',
-														symmetrize=False, col_normalize=False, cluster=False)
-		pl.figure(figsize=[10,8])
-		tab = pd.DataFrame(zscore(conf_mat.values, axis=0), classes, classes)
-		tab = 0.5 * (tab+tab.T)
-		tab = cluster_matrix(tab, 'both')
-		raw_tab = pd.DataFrame(conf_mat, index=classes, columns=classes)
-		# plot
-		plot_heatmap(tab, wildcards.dataset+' simple confusion')
-		# export
-		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-		raw_tab.to_csv(output[1])
-		pl.close()
+# rule simple_confusion:
+# 	input: SDIR+'tmp_data_{dataset}.h5'
+# 	output: 'figures/simple_confusion_{dataset}.pdf', 'tables/simple_confusion_{dataset}_tables.csv'
+# 	resources:
+# 		partition=partition,
+# 		mem=str(mem)+'g',
+# 		time='4:00:00',
+# 		mem_mb=mem*1000,
+# 		disk_mb=mem*1000
+# 	run:
+# 		adata = sc.read(input[0])
+# 		conf_mat, classes = simple_classifier_confusion(adata, 'X_pca', 'perturbation', test_size_fraction=0.2, n_nodes=0, method='SVC',
+# 														symmetrize=False, col_normalize=False, cluster=False)
+# 		pl.figure(figsize=[10,8])
+# 		tab = pd.DataFrame(zscore(conf_mat.values, axis=0), classes, classes)
+# 		tab = 0.5 * (tab+tab.T)
+# 		tab = cluster_matrix(tab, 'both')
+# 		raw_tab = pd.DataFrame(conf_mat, index=classes, columns=classes)
+# 		# plot
+# 		plot_heatmap(tab, wildcards.dataset+' simple confusion')
+# 		# export
+# 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+# 		raw_tab.to_csv(output[1])
+# 		pl.close()
 
-rule simple_test_confusion:
-	input: SDIR+'tmp_data_{dataset}.h5'
-	output: 'figures/simple_test_confusion_{dataset}.pdf', 'tables/simple_test_confusion_{dataset}_tables.csv'
-	resources:
-		partition=partition,
-		mem=str(mem)+'g',
-		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
-	run:
-		adata = sc.read(input[0])
-		conf_mat, classes = simple_classifier_confusion(adata, 'X_pca', 'perturbation', test_size_fraction=0.2, n_nodes=0, method='SVC',
-														symmetrize=False, col_normalize=False, cluster=False, propagate='test')
-		pl.figure(figsize=[10,8])
-		tab = pd.DataFrame(zscore(conf_mat.values, axis=0), classes, classes)
-		tab = 0.5 * (tab+tab.T)
-		tab = cluster_matrix(tab, 'both')
-		raw_tab = pd.DataFrame(conf_mat, index=classes, columns=classes)
-		# plot
-		plot_heatmap(tab, wildcards.dataset+' simple confusion')
-		# export
-		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-		raw_tab.to_csv(output[1])
-		pl.close()
+# rule simple_test_confusion:
+# 	input: SDIR+'tmp_data_{dataset}.h5'
+# 	output: 'figures/simple_test_confusion_{dataset}.pdf', 'tables/simple_test_confusion_{dataset}_tables.csv'
+# 	resources:
+# 		partition=partition,
+# 		mem=str(mem)+'g',
+# 		time='4:00:00',
+# 		mem_mb=mem*1000,
+# 		disk_mb=mem*1000
+# 	run:
+# 		adata = sc.read(input[0])
+# 		conf_mat, classes = simple_classifier_confusion(adata, 'X_pca', 'perturbation', test_size_fraction=0.2, n_nodes=0, method='SVC',
+# 														symmetrize=False, col_normalize=False, cluster=False, propagate='test')
+# 		pl.figure(figsize=[10,8])
+# 		tab = pd.DataFrame(zscore(conf_mat.values, axis=0), classes, classes)
+# 		tab = 0.5 * (tab+tab.T)
+# 		tab = cluster_matrix(tab, 'both')
+# 		raw_tab = pd.DataFrame(conf_mat, index=classes, columns=classes)
+# 		# plot
+# 		plot_heatmap(tab, wildcards.dataset+' simple confusion')
+# 		# export
+# 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+# 		raw_tab.to_csv(output[1])
+# 		pl.close()
 
-rule looc_confusion:
-	input: SDIR+'tmp_data_{dataset}.h5'
-	output: 'figures/looc_confusion_{dataset}.pdf', 'tables/looc_confusion_{dataset}_tables.csv'
-	resources:
-		partition=partition,
-		mem=str(mem)+'g',
-		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
-	run:
-		adata = sc.read(input[0])
-		tab = leave_one_out_classification(adata, 'X_pca', 'perturbation', method='SVC', plot=True, show=False, plot_each=False)
-		# plot
-		plot_heatmap(tab, wildcards.dataset+' looc')
-		# export
-		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-		tab.to_csv(output[1])
-		pl.close()
+# rule looc_confusion:
+# 	input: SDIR+'tmp_data_{dataset}.h5'
+# 	output: 'figures/looc_confusion_{dataset}.pdf', 'tables/looc_confusion_{dataset}_tables.csv'
+# 	resources:
+# 		partition=partition,
+# 		mem=str(mem)+'g',
+# 		time='4:00:00',
+# 		mem_mb=mem*1000,
+# 		disk_mb=mem*1000
+# 	run:
+# 		adata = sc.read(input[0])
+# 		tab = leave_one_out_classification(adata, 'X_pca', 'perturbation', method='SVC', plot=True, show=False, plot_each=False)
+# 		# plot
+# 		plot_heatmap(tab, wildcards.dataset+' looc')
+# 		# export
+# 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+# 		tab.to_csv(output[1])
+# 		pl.close()
 
-rule graph_entropy:
-	input: SDIR+'tmp_data_{dataset}.h5'
-	output: 'figures/graph_entropy_{dataset}.pdf', 'tables/graph_entropy_{dataset}_tables.csv'
-	resources:
-		partition=partition,
-		mem=str(mem)+'g',
-		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
-	run:
-		adata = sc.read(input[0])
-		tab = simil(adata, groupby='perturbation', plot=False)
-		# plot
-		plot_heatmap(tab, wildcards.dataset+' Graph label entropy')
-		# export
-		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-		tab.to_csv(output[1])
-		pl.close()
+# rule graph_entropy:
+# 	input: SDIR+'tmp_data_{dataset}.h5'
+# 	output: 'figures/graph_entropy_{dataset}.pdf', 'tables/graph_entropy_{dataset}_tables.csv'
+# 	resources:
+# 		partition=partition,
+# 		mem=str(mem)+'g',
+# 		time='4:00:00',
+# 		mem_mb=mem*1000,
+# 		disk_mb=mem*1000
+# 	run:
+# 		adata = sc.read(input[0])
+# 		tab = simil(adata, groupby='perturbation', plot=False)
+# 		# plot
+# 		plot_heatmap(tab, wildcards.dataset+' Graph label entropy')
+# 		# export
+# 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+# 		tab.to_csv(output[1])
+# 		pl.close()
