@@ -1,5 +1,4 @@
 ![Website](https://img.shields.io/website?down_color=red&down_message=offline&label=scperturb.org&up_message=online&url=http%3A%2F%2Fprojects.sanderlab.org%2Fscperturb%2F)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/scperturb?label=PyPI%20downloads)
 ![GitHub issues](https://img.shields.io/github/issues-raw/sanderlab/scperturb)
 ![GitHub last commit](https://img.shields.io/github/last-commit/sanderlab/scperturb)
 
@@ -11,6 +10,8 @@ The datasets are available to download on [scperturb.org](https://scperturb.org/
 - [ATAC data](https://zenodo.org/record/7058382)
 
 ## scperturb for python
+![PyPI - Downloads](https://img.shields.io/pypi/dm/scperturb?label=PyPI%20downloads)
+
 A python package to compute E-distances in single-cell perturbation data and perform E-tests.
 
 ### Install

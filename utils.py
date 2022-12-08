@@ -3,8 +3,10 @@ import os
 import scanpy as sc
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as pl
 
 from warnings import warn
+from itertools import product
 from tqdm import tqdm
 from scipy.io import mmwrite
 from scipy.sparse import issparse
@@ -13,6 +15,18 @@ from sklearn.metrics import pairwise_distances
 from scipy.cluster.hierarchy import distance, linkage, dendrogram
 from shutil import copyfileobj
 from chembl_webresource_client.new_client import new_client
+
+
+def random_split(adata, key='perturbation', inplace=True):
+    # Creates a new column "{key}_X" where 50% of cells randomly get a "_X" appended to their value of {key}.
+    adata = adata if inplace else adata.copy()
+    N = int(np.min(adata.obs[key].value_counts())/2)
+    adata.obs[f'{key}_X'] = adata.obs[key].astype(str)
+    for group in pd.unique(adata.obs[key]):
+        mask = np.random.choice(adata.obs_names[adata.obs[key]==group], N, replace=False)
+        adata.obs.loc[mask, f'{key}_X'] = f'{group}_X'
+    if not inplace:
+        return adata
 
 
 def query_chembl_drugs(names, qkeys=['pref_name', 'molecule_chembl_id', 'molecule_type', 'usan_stem_definition']):
@@ -380,4 +394,29 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean')
             mean_pwd = np.sum(pwd) / factor
             df.loc[p1, p2] = mean_pwd
             df.loc[p2, p1] = mean_pwd
+    return df
+
+def pseudo_bulk(adata, keys, layer='counts', min_cells_per_group=10):
+    X = []
+    Y = []
+    for gs in tqdm(product(*[pd.unique(adata.obs[key]) for key in keys])):
+        mask = np.logical_and.reduce([adata.obs[key]==g for g, key in zip(gs, keys)])
+        ncells = sum(mask)
+        if ncells < min_cells_per_group: continue
+        Y.append(list(gs)+[ncells])
+        X_ = adata[mask].layers[layer] if layer!=None else adata[mask].X
+        X.append(np.array(np.sum(X_, axis=0), dtype=int)[0])
+    obs=pd.DataFrame(Y, columns=list(keys)+['ncells'])
+    return sc.AnnData(np.array(X), obs=obs, var=adata.var)
+
+def pairwise_mean_pca_distances(adata, obs_key, obsm_key='X_pca', sq_dist=True):
+    groups = pd.unique(adata.obs[obs_key])
+    df = pd.DataFrame(index=groups, columns=groups, dtype=float)
+    for i, p1 in enumerate(tqdm(groups)):
+        x1 = np.mean(adata[adata.obs[obs_key]==p1].obsm[obsm_key], axis=1)
+        for p2 in groups[i:]:
+            x2 = np.mean(adata[adata.obs[obs_key]==p2].obsm[obsm_key], axis=1)
+            pwd = np.linalg.norm(x1 - x2) ** (1+int(sq_dist))
+            df.loc[p1, p2] = pwd
+            df.loc[p2, p1] = pwd
     return df

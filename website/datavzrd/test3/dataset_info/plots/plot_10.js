@@ -1,0 +1,1 @@
+let show_plot_10=true;let plot_10={"$schema":"https://vega.github.io/schema/vega-lite/v4.json","width":"container","layer":[{"data":{"values":[{"key":"zip","value":6},{"key":"h5ad","value":38}]},"mark":"bar","encoding":{"x":{"field":"key","sort":{"field":"value","order":"descending"},"title":"File Extension"},"y":{"field":"value","type":"quantitative","title":null}}}]}

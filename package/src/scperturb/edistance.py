@@ -45,7 +45,7 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
             x2 = adata[adata.obs[obs_key]==p2].obsm[obsm_key].copy()
             pwd = pairwise_distances(x1, x2, metric=dist)
             M = len(x2)
-            factor = N*M if p1!=p2 else N**2 - N  # correct mean for zero diagonal if comparing to same set
+            factor = N*M if p1!=p2 else N**2
             mean_pwd = np.sum(pwd) / factor
             df.loc[p1, p2] = mean_pwd
             df.loc[p2, p1] = mean_pwd
