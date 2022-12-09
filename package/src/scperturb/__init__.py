@@ -1,1 +1,3 @@
-from scperturb.edistance import *
+from .edistance import *
+from .etest import *
+from .utils import *
