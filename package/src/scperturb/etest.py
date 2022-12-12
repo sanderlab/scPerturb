@@ -4,7 +4,7 @@ import scanpy as sc
 
 from tqdm import tqdm
 from statsmodels.stats.multitest import multipletests
-from scperturb.edistance import edist
+from .edistance import edist
 
 def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean', control='control', alpha=0.05, runs=100, correction_method='holm-sidak', verbose=True):
     """Performs Monte Carlo permutation test with E-distance as test statistic.
