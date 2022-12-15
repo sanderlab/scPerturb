@@ -11,12 +11,11 @@ dependencies:
   - r-base>=4.1
   - r-seurat
   - r-irkernel
-  - cudatoolkit=11.3
   - pytorch
   - numpy
+  - pip
   - pandas
   - seaborn
-  - scirpy
   - numba
   - anndata
   - umap-learn
@@ -25,23 +24,24 @@ dependencies:
   - scanpy
   - scvelo
   - scvi-tools
-  - scirpy
   - tqdm
   - notebook
   - jupyter_contrib_nbextensions
   - jupyter_nbextensions_configurator
   - matplotlib-venn
-  - gseapy
+  - gseapy==0.14.0
   - mygene
   - chembl_webresource_client
   - snakemake
-  - bioconductor-deseq2
+  # - bioconductor-deseq2
   - scrublet
-  - velocyto.py
   - pyyaml
-  # pip install decoupler
-  # pip install goatools
-  # pip install statannotations
-  # pip install --user scikit-misc
+  - pip:
+    - decoupler
+    - goatools
+    - velocyto
+    - scikit-misc
+    - statannotations
+    - scirpy
   # jupyter contrib nbextension install --user
   # jupyter nbextensions_configurator enable --user
