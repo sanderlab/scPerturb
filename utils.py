@@ -4,6 +4,7 @@ import scanpy as sc
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as pl
+import seaborn as sns
 
 from warnings import warn
 from itertools import product
@@ -420,3 +421,12 @@ def pairwise_mean_pca_distances(adata, obs_key, obsm_key='X_pca', sq_dist=True):
             df.loc[p1, p2] = pwd
             df.loc[p2, p1] = pwd
     return df
+
+def plot_heatmap(tab, title):
+	fig, ax = pl.subplots(figsize=[10,8], dpi=120)
+	sns.heatmap(tab, robust=True, ax=ax)
+	ax.set_xticks(np.arange(len(tab))+.5)
+	ax.set_xticklabels(tab.index, fontsize=6)
+	ax.set_yticks(np.arange(len(tab))+.5)
+	ax.set_yticklabels(tab.index, fontsize=6)
+	ax.set_title(title)

@@ -1,77 +1,89 @@
-# snakemake --profile=cubi-v1 --jobs 100 -k --use-conda --restart-times 0
-# snakemake --forceall --dag | dot -Tpdf > snake_dag.pdf
-# snakemake --forceall --rulegraph | dot -Tpdf > snake_rulegraph.pdf
-
-mem = 168 # 2000
-partition = 'short'  #'highmem'
+"""
+Author: Stefan Peidli
+Aim: Snakemake workflow for scperturb analysis.
+Date: 15.12.2022
+Run: snakemake
+Run (dev): snakemake --profile=cubi-dev --jobs 100 -k --use-conda --restart-times 0 --rerun-triggers mtime
+DAG: snakemake --forceall --dag | dot -Tpdf > snake_dag.pdf
+Rulegraph: snakemake --forceall --rulegraph | dot -Tpdf > snake_rulegraph.pdf
+"""
 
 import pandas as pd
 import numpy as np
-import os
 import sys
+import yaml
+from pathlib import Path
 
-SDIR = "/fast/scratch/users/peidlis_c/perturbation_resource_paper/"
-WDIR = '/fast/work/users/peidlis_c/data/perturbation_resource_paper/'  # data directory on work
-CDIR = '/fast/work/users/peidlis_c/projects/perturbation_resource_paper/scPerturb/'  # code directory on work
-UTILS = "/fast/work/users/peidlis_c/utils/single_cell_rna_seq/scrnaseq_utils/"  # my utils
-ZENODO_URL = 'https://zenodo.org/record/7278143/'  # V1.1
+configfile: "../../config.yaml"
+
+TEMPDIR = Path(config["TEMPDIR"])
+DOWNDIR = Path(config["DOWNDIR"])
 
 # load list of RNA datasets
 df = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx', index_col=[0,1])
 sdf = df[df['Modality = Data type'].isin(['RNA', 'RNA + protein (RNA)'])]
 datasets = [a+'_'+b for (a,b), row in sdf.iterrows()]
-for dataset in ['AissaBenevolenskaya2021_GSM2406681_10X010', 'GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 'GehringPachter2019']:
+for dataset in ['GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 'GehringPachter2019']:
 	if dataset in datasets:
 		datasets.remove(dataset)
 print(datasets)
 
-def plot_heatmap(tab, title):
-	import seaborn as sns
-	import matplotlib.pyplot as pl
-	fig, ax = pl.subplots(figsize=[10,8], dpi=120)
-	sns.heatmap(tab, robust=True, ax=ax)
-	ax.set_xticks(np.arange(len(tab))+.5)
-	ax.set_xticklabels(tab.index, fontsize=6)
-	ax.set_yticks(np.arange(len(tab))+.5)
-	ax.set_yticklabels(tab.index, fontsize=6)
-	ax.set_title(title)
-
 rule all:
 	input:
-		expand(SDIR+'tmp_data_{dataset}.h5', dataset=datasets),
-		# expand(SDIR+'tmp_data_{dataset}.h5', dataset=repoweiss),
+		expand(TEMPDIR / 'tmp_data_{dataset}.h5', dataset=datasets),
+		# expand(TEMPDIR / 'tmp_data_{dataset}.h5', dataset=repoweiss),
 		expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
-			   mode=['etest', 'edist'
-			   # 'earth_mover_distances', 'pairwise_mean_pca_distances', 'pseudobulk_correlations',
+			   mode=['etest', 'edist',
+			   'earth_mover_distances', 'pseudobulk_correlations',  # TODO: PSEUDOBULK PCA distances
 			   # 'simple_confusion', 'simple_test_confusion', 'looc_confusion', 'graph_entropy'
 			   ]),
 		expand('figures/{mode}_{dataset}.pdf', dataset=datasets,
-			   mode=['umap'#, 'pseudobulk_umap'
+			   mode=['umap', 'pseudobulk_umap'
 			   ])
 
 rule zenodo_download:
-	output: WDIR+'{dataset}.h5ad'
+	"""
+	Downloads all RNA datasets of scperturb from zenodo via wget.
+  	"""
+	output: DOWNDIR / '{dataset}.h5ad'
+	resources:
+		partition='short',
+		time='4:00:00',
+		mem_mb=4000,
+		disk_mb=4000
 	params:
-		sleeptime=np.random.uniform(1,20)
+		sleeptime=np.random.uniform(1,20),
+		zenodo_url=config["ZENODO_RNA_URL"]
 	shell:
 		'''
 		sleep {params.sleeptime}
-		wget {ZENODO_URL}/files/{dataset}.h5ad -O {output}
+		wget {params.zenodo_url}/files/{dataset}.h5ad -O {output}
 		'''
 
 rule prepare_data:
-	input: WDIR+'{dataset}.h5ad'
-	output: SDIR+'tmp_data_{dataset}.h5'
+	"""
+	Prepares scperturb RNA datasets:
+	- Filtering (Cells: min_counts=1000, Genes: min_cells=50)
+	- Normalization
+	- Log1p trafo
+	- Removes perturbations with less than 50 cells, then
+	- Subsamples each perturbation to the smallest 
+	  number of cells such that each perturbation has at least that many cells
+	- Precomputes 2000 HVGs, PCA and KNN graph
+	- Adds a convenience annotation, randomly splitting each perturbation in two groups artificially
+	  E.g. 50 EGFRi cells --> 25 EGFRi cells + 25 EGFRi_X cells.
+  	"""
+	input: DOWNDIR / '{dataset}.h5ad'
+	output: TEMPDIR / 'tmp_data_{dataset}.h5'
 	resources:
 		partition='medium',
-		mem='64g',##str(mem)+'g',
-		time='2-00:00:00',
-		mem_mb=64000,#mem*1000,
-		disk_mb=64000#mem*1000
+		time='0-18:00:00',
+		mem_mb=64000,
+		disk_mb=64000
 	run:
 		import scanpy as sc
 		# project utils
-		sys.path.insert(1, CDIR)
+		sys.path.insert(1, '../../')
 		from utils import equal_subsampling, random_split
 
 		adata = sc.read(input[0])
@@ -99,24 +111,28 @@ rule prepare_data:
 		adata.write(output[0])
 
 rule e_testing:
-	input: SDIR+'tmp_data_{dataset}.h5'
+	"""
+	Computes and plots E-test between each perturbation and 'control' cells.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'figures/etest_{dataset}.pdf', 'tables/etest_{dataset}_tables.csv'
+	params:
+		iterations=1000
 	resources:
 		partition='medium',
-		mem=str(mem)+'g',
 		time='1-23:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
+		mem_mb=168000,
+		disk_mb=168000
 	run:
 		import scanpy as sc
 		import matplotlib.pyplot as pl
 		import seaborn as sns
 		# scperturb utils
-		sys.path.insert(1, CDIR+'/package/src/')
+		sys.path.insert(1, '../../package/src/')
 		from scperturb import etest
 
 		adata = sc.read(input[0])
-		df = etest(adata, runs=1000)
+		df = etest(adata, runs=params.iterations)
 		df['log10_edist'] = np.log10(np.clip(df.edist, 0, np.infty))
 
 		# export table
@@ -152,14 +168,16 @@ rule e_testing:
 		pl.close()
 
 rule move_some_earth:
-	input: SDIR+'tmp_data_{dataset}.h5'
+	"""
+	Computes the 2-Wasserstein distance between all perturbation pairs.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'tables/earth_mover_distances_{dataset}_tables.csv'
 	resources:
-		partition=partition,
-		mem=str(mem)+'g',
+		partition='short',
 		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
+		mem_mb=168000,
+		disk_mb=168000
 	run:
 		import scanpy as sc
 		import matplotlib.pyplot as pl
@@ -191,23 +209,25 @@ rule move_some_earth:
 				df.loc[p2, p1] = cost
 		df.to_csv(output[0])
 
-rule edistance:
-	input: SDIR+'tmp_data_{dataset}.h5'
+rule e_distance:
+	"""
+	Computes and plots the E-distance between all perturbation pairs.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'figures/edist_{dataset}.pdf', 'tables/edist_{dataset}_tables.csv'
 	resources:
-		partition=partition,
-		mem=str(mem)+'g',
+		partition='short',
 		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
+		mem_mb=168000,
+		disk_mb=168000
 	run:
 		import scanpy as sc
 		import matplotlib.pyplot as pl
 		# scperturb utils
-		sys.path.insert(1, CDIR+'/package/src/')
+		sys.path.insert(1, '../../package/src/')
 		from scperturb import edist
 		# project utils
-		sys.path.insert(1, CDIR)
+		sys.path.insert(1, '../../')
 		from utils import cluster_matrix
 
 		adata = sc.read(input[0])
@@ -221,41 +241,17 @@ rule edistance:
 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
 		pl.close()
 
-rule pairwise_mean_pca_distances:
-	input: SDIR+'tmp_data_{dataset}.h5'
-	output: 'figures/pairwise_mean_pca_distances_{dataset}.pdf', 'tables/pairwise_mean_pca_distances_{dataset}_tables.csv'
-	resources:
-		partition=partition,
-		mem=str(mem)+'g',
-		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
-	run:
-		import scanpy as sc
-		import matplotlib.pyplot as pl
-		# project utils
-		sys.path.insert(1, CDIR)
-		from utils import pairwise_mean_pca_distances, cluster_matrix
-
-		adata = sc.read(input[0])
-		tab = pairwise_mean_pca_distances(adata, 'perturbation', obsm_key='X_pca')
-		tab.to_csv(output[1])
-		# plot
-		tab = (1/tab).replace([np.inf, -np.inf], 0, inplace=False)
-		tab = cluster_matrix(tab, 'both')
-		plot_heatmap(tab, wildcards.dataset+' pseudobulk pca distances')
-		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-		pl.close()
-
 rule umap:
-	input: SDIR+'tmp_data_{dataset}.h5'
+	"""
+	Plots a umap of cells with perturbations as colors.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'figures/umap_{dataset}.pdf'
 	resources:
-		partition=partition,
-		mem=str(mem)+'g',
+		partition='short',
 		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
+		mem_mb=168000,
+		disk_mb=168000
 	run:
 		import scanpy as sc
 		import scvelo as scv
@@ -267,20 +263,22 @@ rule umap:
 		pl.close()
 
 rule pseudobulk_umap:
-	input: SDIR+'tmp_data_{dataset}.h5'
+	"""
+	Plots a umap where each point is the pseudobulk of one perturbation.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'figures/pseudobulk_umap_{dataset}.pdf'
 	resources:
-		partition=partition,
-		mem=str(mem)+'g',
+		partition='short',
 		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
+		mem_mb=168000,
+		disk_mb=168000
 	run:
 		import scanpy as sc
 		import scvelo as scv
 		import matplotlib.pyplot as pl
 		# project utils
-		sys.path.insert(1, CDIR)
+		sys.path.insert(1, '../../')
 		from utils import pseudo_bulk
 
 		adata = sc.read(input[0])
@@ -296,19 +294,21 @@ rule pseudobulk_umap:
 		pl.close()
 
 rule pseudobulk_correlations:
-	input: SDIR+'tmp_data_{dataset}.h5'
+	"""
+	Computes the pairwise correlation between pseudobulked perturbations in PCA space.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'figures/pseudobulk_correlations_{dataset}.pdf', 'tables/pseudobulk_correlations_{dataset}_tables.csv'
 	resources:
-		partition=partition,
-		mem=str(mem)+'g',
+		partition='short',
 		time='4:00:00',
-		mem_mb=mem*1000,
-		disk_mb=mem*1000
+		mem_mb=168000,
+		disk_mb=168000
 	run:
 		import scanpy as sc
 		import matplotlib.pyplot as pl
 		# project utils
-		sys.path.insert(1, CDIR)
+		sys.path.insert(1, '../../')
 		from utils import pseudo_bulk, cluster_matrix
 
 		adata = sc.read(input[0])
@@ -328,11 +328,10 @@ rule pseudobulk_correlations:
 		pl.close()
 
 # rule simple_confusion:
-# 	input: SDIR+'tmp_data_{dataset}.h5'
+# 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 # 	output: 'figures/simple_confusion_{dataset}.pdf', 'tables/simple_confusion_{dataset}_tables.csv'
 # 	resources:
-# 		partition=partition,
-# 		mem=str(mem)+'g',
+# 		partition='short',
 # 		time='4:00:00',
 # 		mem_mb=mem*1000,
 # 		disk_mb=mem*1000
@@ -353,11 +352,10 @@ rule pseudobulk_correlations:
 # 		pl.close()
 
 # rule simple_test_confusion:
-# 	input: SDIR+'tmp_data_{dataset}.h5'
+# 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 # 	output: 'figures/simple_test_confusion_{dataset}.pdf', 'tables/simple_test_confusion_{dataset}_tables.csv'
 # 	resources:
-# 		partition=partition,
-# 		mem=str(mem)+'g',
+# 		partition='short',
 # 		time='4:00:00',
 # 		mem_mb=mem*1000,
 # 		disk_mb=mem*1000
@@ -378,11 +376,10 @@ rule pseudobulk_correlations:
 # 		pl.close()
 
 # rule looc_confusion:
-# 	input: SDIR+'tmp_data_{dataset}.h5'
+# 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 # 	output: 'figures/looc_confusion_{dataset}.pdf', 'tables/looc_confusion_{dataset}_tables.csv'
 # 	resources:
-# 		partition=partition,
-# 		mem=str(mem)+'g',
+# 		partition='short',
 # 		time='4:00:00',
 # 		mem_mb=mem*1000,
 # 		disk_mb=mem*1000
@@ -397,11 +394,10 @@ rule pseudobulk_correlations:
 # 		pl.close()
 
 # rule graph_entropy:
-# 	input: SDIR+'tmp_data_{dataset}.h5'
+# 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 # 	output: 'figures/graph_entropy_{dataset}.pdf', 'tables/graph_entropy_{dataset}_tables.csv'
 # 	resources:
-# 		partition=partition,
-# 		mem=str(mem)+'g',
+# 		partition='short',
 # 		time='4:00:00',
 # 		mem_mb=mem*1000,
 # 		disk_mb=mem*1000

@@ -1,6 +1,8 @@
 # custom
 data/
 .snakemake/
+logs/
+*.err
 *.out
 .DS_Store
 revision/snakemake/tables/
