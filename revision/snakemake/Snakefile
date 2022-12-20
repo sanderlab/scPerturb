@@ -7,8 +7,6 @@ Run (dev): snakemake --profile=cubi-dev --jobs 100 -k --use-conda --restart-time
 DAG: snakemake --forceall --dag | dot -Tpdf > snake_dag.pdf
 Rulegraph: snakemake --forceall --rulegraph | dot -Tpdf > snake_rulegraph.pdf
 """
-# TODO: All datasets seem to have only one condition in perturbation??? Etest and edist fail. EDIT: I think the reason is that every dataset downloaded is Gehring Pachter...
-# TODO: Snakemake seems to always want to update half of the zenodo downloads, why??? Says parameters changed but they did not.
 
 import pandas as pd
 import numpy as np
@@ -16,13 +14,13 @@ import sys
 import yaml
 from pathlib import Path
 
+# Load configs
 configfile: "../../config.yaml"
-
 TEMPDIR = Path(config["TEMPDIR"])
 DOWNDIR = Path(config["DOWNDIR"])
 
-# load list of RNA datasets
-df = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx', index_col=[0,1])
+# Load list of RNA datasets available via scPerturb
+df = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx', index_col=[0,1])  # supplemental table
 sdf = df[df['Modality = Data type'].isin(['RNA', 'RNA + protein (RNA)'])]
 datasets = [a+'_'+b for (a,b), row in sdf.iterrows()]
 for dataset in ['GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 'GehringPachter2019']:
@@ -238,7 +236,7 @@ rule e_distance:
 		from scperturb import edist
 		# project utils
 		sys.path.insert(1, '../../')
-		from utils import cluster_matrix
+		from utils import cluster_matrix, plot_heatmap
 
 		adata = sc.read(input[0])
 		tab = edist(adata, 'perturbation', obsm_key='X_pca')
@@ -319,7 +317,7 @@ rule pseudobulk_correlations:
 		import matplotlib.pyplot as pl
 		# project utils
 		sys.path.insert(1, '../../')
-		from utils import pseudo_bulk, cluster_matrix
+		from utils import pseudo_bulk, cluster_matrix, plot_heatmap
 
 		adata = sc.read(input[0])
 		bdata = pseudo_bulk(adata, ['perturbation'])
