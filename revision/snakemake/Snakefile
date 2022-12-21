@@ -155,7 +155,7 @@ rule e_testing:
 		ax.set_xticks([0,1,2])
 		# ax.set_xticklabels([r'$10^0$', r'$10^1$', r'$10^2$'])
 		ax.set_xticklabels([1, 10, 100])
-		ax.set_title(f'E-tests for {dataset}\n{sig}/{total} are significant (pv<0.05)')
+		ax.set_title(f'E-tests for {wildcards.dataset}\n{sig}/{total} are significant (pv<0.05)')
 		ax.set_ylabel('Adjusted p-value')
 		ax.set_xlabel('E-distance to unperturbed')
 		ax.legend(title='Significant')
@@ -395,7 +395,7 @@ rule effect_of_multi_vs_single_PCA:
 		sns.scatterplot(data=df, x='singlePCA', y='multiPCA', hue='significant_adj', ax=ax)
 		from scipy.stats import spearmanr
 		r = spearmanr(df.singlePCA, df.multiPCA)[0]
-		ax.set_title(f'E-distances of to unperturbed in {dataset}\nSpearman correlation: {np.round(r,2)}')
+		ax.set_title(f'E-distances of to unperturbed in {wildcards.dataset}\nSpearman correlation: {np.round(r,2)}')
 		ax.set_xlabel('with one joint PCA for all perturbations\n(singlePCA)')
 		ax.set_ylabel('with one extra PCA for each perturbation\n(multiPCA)')
 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
