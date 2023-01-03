@@ -476,8 +476,8 @@ rule effect_of_ncells:
 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'tables/effect_of_ncells_{dataset}_tables.csv'
 	resources:
-		partition='short',
-		time='4:00:00',
+		partition='medium',
+		time='24:00:00',
 		mem_mb=64000,
 		disk_mb=64000
 	params:
@@ -500,17 +500,14 @@ rule effect_of_ncells:
 		ncells = {}
 
 		# Define sample points ("nodes")
-		# ns = np.linspace(0.05, 1, num=params.iterations)
 		ns = leftsided_chebyshev_nodes(params.iterations)
 
 		total_counts = np.sum(adata.X>0)
 		for n in ns:
-			tdata = sc.pp.downsample_counts(adata, total_counts=int(n*total_counts), copy=True)
+			# subsample cells
+			tdata = sc.pp.subsample(adata, fraction=n, copy=True)
 			tdata.obs['ncells'] = tdata.X.sum(1)
 			ncells[n] = tdata.obs[groupby].value_counts()
-			sc.pp.normalize_per_cell(tdata)
-			sc.pp.log1p(tdata)
-			sc.pp.highly_variable_genes(tdata, n_top_genes=2000)
 			sc.pp.pca(tdata, use_highly_variable=False)
 			# STATS
 			deltas[n] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)
@@ -542,8 +539,8 @@ rule effect_of_ncounts:
 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'tables/effect_of_ncounts_{dataset}_tables.csv'
 	resources:
-		partition='short',
-		time='4:00:00',
+		partition='medium',
+		time='24:00:00',
 		mem_mb=64000,
 		disk_mb=64000
 	params:
@@ -601,87 +598,3 @@ rule effect_of_ncounts:
 			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==False:
 				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
 		sdf.to_csv(output[0])
-
-# rule simple_confusion:
-# 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
-# 	output: 'figures/simple_confusion_{dataset}.pdf', 'tables/simple_confusion_{dataset}_tables.csv'
-# 	resources:
-# 		partition='short',
-# 		time='4:00:00',
-# 		mem_mb=mem*1000,
-# 		disk_mb=mem*1000
-# 	run:
-# 		adata = sc.read(input[0])
-# 		conf_mat, classes = simple_classifier_confusion(adata, 'X_pca', 'perturbation', test_size_fraction=0.2, n_nodes=0, method='SVC',
-# 														symmetrize=False, col_normalize=False, cluster=False)
-# 		pl.figure(figsize=[10,8])
-# 		tab = pd.DataFrame(zscore(conf_mat.values, axis=0), classes, classes)
-# 		tab = 0.5 * (tab+tab.T)
-# 		tab = cluster_matrix(tab, 'both')
-# 		raw_tab = pd.DataFrame(conf_mat, index=classes, columns=classes)
-# 		# plot
-# 		plot_heatmap(tab, wildcards.dataset+' simple confusion')
-# 		# export
-# 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-# 		raw_tab.to_csv(output[1])
-# 		pl.close()
-
-# rule simple_test_confusion:
-# 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
-# 	output: 'figures/simple_test_confusion_{dataset}.pdf', 'tables/simple_test_confusion_{dataset}_tables.csv'
-# 	resources:
-# 		partition='short',
-# 		time='4:00:00',
-# 		mem_mb=mem*1000,
-# 		disk_mb=mem*1000
-# 	run:
-# 		adata = sc.read(input[0])
-# 		conf_mat, classes = simple_classifier_confusion(adata, 'X_pca', 'perturbation', test_size_fraction=0.2, n_nodes=0, method='SVC',
-# 														symmetrize=False, col_normalize=False, cluster=False, propagate='test')
-# 		pl.figure(figsize=[10,8])
-# 		tab = pd.DataFrame(zscore(conf_mat.values, axis=0), classes, classes)
-# 		tab = 0.5 * (tab+tab.T)
-# 		tab = cluster_matrix(tab, 'both')
-# 		raw_tab = pd.DataFrame(conf_mat, index=classes, columns=classes)
-# 		# plot
-# 		plot_heatmap(tab, wildcards.dataset+' simple confusion')
-# 		# export
-# 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-# 		raw_tab.to_csv(output[1])
-# 		pl.close()
-
-# rule looc_confusion:
-# 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
-# 	output: 'figures/looc_confusion_{dataset}.pdf', 'tables/looc_confusion_{dataset}_tables.csv'
-# 	resources:
-# 		partition='short',
-# 		time='4:00:00',
-# 		mem_mb=mem*1000,
-# 		disk_mb=mem*1000
-# 	run:
-# 		adata = sc.read(input[0])
-# 		tab = leave_one_out_classification(adata, 'X_pca', 'perturbation', method='SVC', plot=True, show=False, plot_each=False)
-# 		# plot
-# 		plot_heatmap(tab, wildcards.dataset+' looc')
-# 		# export
-# 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-# 		tab.to_csv(output[1])
-# 		pl.close()
-
-# rule graph_entropy:
-# 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
-# 	output: 'figures/graph_entropy_{dataset}.pdf', 'tables/graph_entropy_{dataset}_tables.csv'
-# 	resources:
-# 		partition='short',
-# 		time='4:00:00',
-# 		mem_mb=mem*1000,
-# 		disk_mb=mem*1000
-# 	run:
-# 		adata = sc.read(input[0])
-# 		tab = simil(adata, groupby='perturbation', plot=False)
-# 		# plot
-# 		plot_heatmap(tab, wildcards.dataset+' Graph label entropy')
-# 		# export
-# 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-# 		tab.to_csv(output[1])
-# 		pl.close()
