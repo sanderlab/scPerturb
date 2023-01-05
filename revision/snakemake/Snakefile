@@ -356,6 +356,7 @@ rule effect_of_multi_vs_single_PCA:
 	run:
 		import scanpy as sc
 		import scvelo as scv
+		import seaborn as sns
 		import matplotlib.pyplot as pl
 		from tqdm import tqdm
 		# scperturb utils
@@ -505,12 +506,14 @@ rule effect_of_ncells:
 		total_counts = np.sum(adata.X>0)
 		for n in ns:
 			# subsample cells
+			print(n*tdata.n_obs)
 			tdata = sc.pp.subsample(adata, fraction=n, copy=True)
 			tdata.obs['ncells'] = tdata.X.sum(1)
 			ncells[n] = tdata.obs[groupby].value_counts()
 			sc.pp.pca(tdata, use_highly_variable=False)
 			# STATS
-			deltas[n] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)
+			deltas[n] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)  # THIS THROWS AN ERROR
+			# Found array with 0 sample(s) (shape=(0, 10)) while a minimum of 1 is required by check_pairwise_arrays.
 			sigs[n] = self_pca_distances(tdata, groupby, verbose=False)
 			# E-test
 			tests[n] = etest(tdata, groupby, control='control', runs=100)
