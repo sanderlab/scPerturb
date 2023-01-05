@@ -4,6 +4,7 @@ import scanpy as sc
 
 from tqdm import tqdm
 from sklearn.metrics import pairwise_distances
+from warnings import warn
 
 def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', verbose=True):
     """Average of pairwise PCA distances between cells of each group in obs_key.
@@ -31,7 +32,7 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
     """
 
     if obs_key=='X_pca':
-        print('PCA embedding not found, computing...')
+        warn('PCA embedding not found, computing...')
         sc.pp.pca(adata)
 
     groups = pd.unique(adata.obs[obs_key])
@@ -44,7 +45,7 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
             x2 = adata[adata.obs[obs_key]==p2].obsm[obsm_key].copy()
             pwd = pairwise_distances(x1, x2, metric=dist)
             M = len(x2)
-            factor = N*M if p1!=p2 else N**2
+            factor = N * M
             mean_pwd = np.sum(pwd) / factor
             df.loc[p1, p2] = mean_pwd
             df.loc[p2, p1] = mean_pwd
@@ -113,10 +114,11 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca', dist='sqeu
     """
 
     if obs_key=='X_pca':
-        print('PCA embedding not found, computing...')
+        warn('PCA embedding not found, computing...')
         sc.pp.pca(adata)
 
     groups = pd.unique(adata.obs[obs_key])
+    assert control in groups, f'No cells of control group "{control}" were not found in groups defined by "{groupby}".'
     df = pd.DataFrame(index=groups, columns=['distance'], dtype=float)
     fct = tqdm if verbose else lambda x: x
     
@@ -126,7 +128,7 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca', dist='sqeu
         x2 = adata[adata.obs[obs_key]==p].obsm[obsm_key].copy()
         pwd = pairwise_distances(x1, x2, metric=dist)
         M = len(x2)
-        factor = N**2
+        factor = N * M  # Thanks to Garrett Wong for finding this bug
         mean_pwd = np.sum(pwd) / factor
         df.loc[p] = mean_pwd
     df.index.name = obs_key
@@ -159,7 +161,7 @@ def self_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', ver
     """
 
     if obs_key=='X_pca':
-        print('PCA embedding not found, computing...')
+        warn('PCA embedding not found, computing...')
         sc.pp.pca(adata)
 
     groups = pd.unique(adata.obs[obs_key])
