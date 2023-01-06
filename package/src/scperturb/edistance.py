@@ -118,7 +118,7 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca', dist='sqeu
         sc.pp.pca(adata)
 
     groups = pd.unique(adata.obs[obs_key])
-    assert control in groups, f'No cells of control group "{control}" were not found in groups defined by "{groupby}".'
+    assert control in groups, f'No cells of control group "{control}" were not found in groups defined by "{obs_key}".'
     df = pd.DataFrame(index=groups, columns=['distance'], dtype=float)
     fct = tqdm if verbose else lambda x: x
     
