@@ -20,12 +20,13 @@ TEMPDIR = Path(config["TEMPDIR"])
 DOWNDIR = Path(config["DOWNDIR"])
 
 # Load list of RNA datasets available via scPerturb
-df = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx', index_col=[0,1])  # supplemental table
-sdf = df[df['Modality = Data type'].isin(['RNA', 'RNA + protein (RNA)'])]
-datasets = [a+'_'+b for (a,b), row in sdf.iterrows()]
+df = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx')  # supplemental table
+df = df[df['Modality = Data type'].isin(['RNA', 'RNA + protein (RNA)'])]
+df.index = [a if pd.isna(b) else a+'_'+b for a, b in zip(df[df.columns[0]], df[df.columns[1]])]
+datasets = list(df.index)
 for dataset in ['GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 'GehringPachter2019']:
-	if dataset in datasets:
-		datasets.remove(dataset)
+    if dataset in datasets:
+        datasets.remove(dataset)
 print(datasets)
 
 def leftsided_chebyshev_nodes(N):
@@ -53,8 +54,10 @@ rule all:
 		# expand('figures/{mode}_{dataset}.pdf', dataset=datasets,
 		# 	   mode=['umap', 'pseudobulk_umap'
 		# 	   ]),
-		expand('tables/{mode}_{dataset}_tables.csv', dataset=['PapalexiSatija2021_eccite_RNA', 'NormanWeissman2019_filtered', 'SrivatsanTrapnell2020_sciplex3', 'FrangiehIzar2021_RNA', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_11_screen'],
-			   mode=['effect_of_ncounts', 'effect_of_ncells', 'effect_of_both', 'effect_of_nHVGs', 'effect_of_multi_vs_single_PCA'])
+		expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
+			   mode=['effect_of_ncounts', '500_effect_of_ncells', 'effect_of_ncells', 
+			   'effect_of_nPCs', 'effect_of_nHVGs', 'effect_of_multi_vs_single_PCA'
+               ])
 
 rule zenodo_download:
 	"""
@@ -113,6 +116,59 @@ rule prepare_data:
 
 		# subsample against high class imbalance
 		adata = equal_subsampling(adata, 'perturbation', N_min=50)
+		sc.pp.filter_genes(adata, min_cells=3)  # sanity cleaning
+		print('Shape after equal-subsampling: ', adata.shape)
+
+		# select HVGs
+		n_var_max = 2000  # max total features to select
+		sc.pp.highly_variable_genes(adata, n_top_genes=n_var_max, subset=False, flavor='seurat_v3', layer='counts')
+		sc.pp.pca(adata, use_highly_variable=True)
+		sc.pp.neighbors(adata)
+
+		# annotate split for evaluation
+		random_split(adata)
+
+		adata.write(output[0])
+		print('Control in perturbation column:', 'control' in adata.obs.perturbation)
+	
+rule prepare_data_:
+	"""
+	Prepares scperturb RNA datasets:
+	- Filtering (Cells: min_counts=1000, Genes: min_cells=50)
+	- Normalization
+	- Log1p trafo
+	- Removes perturbations with less than 50 cells, then
+	- Subsamples each perturbation to the smallest 
+	  number of cells such that each perturbation has at least that many cells
+	- Precomputes 2000 HVGs, PCA and KNN graph
+	- Adds a convenience annotation, randomly splitting each perturbation in two groups artificially
+	  E.g. 50 EGFRi cells --> 25 EGFRi cells + 25 EGFRi_X cells.
+  	"""
+	input: DOWNDIR / '{dataset}.h5ad'
+	output: TEMPDIR / '500_tmp_data_{dataset}.h5'
+	resources:
+		partition='medium',
+		time='0-18:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	run:
+		import scanpy as sc
+		# project utils
+		sys.path.insert(1, '../../')
+		from utils import equal_subsampling, random_split
+
+		adata = sc.read(input[0])
+		adata.layers['counts'] = adata.X.copy()
+
+		# basic qc and pp
+		sc.pp.filter_cells(adata, min_counts=1000)
+		sc.pp.normalize_per_cell(adata)
+		sc.pp.filter_genes(adata, min_cells=50)
+		sc.pp.log1p(adata)
+		print('Shape after filtering: ', adata.shape)
+
+		# subsample against high class imbalance
+		adata = equal_subsampling(adata, 'perturbation', N_min=500)
 		sc.pp.filter_genes(adata, min_cells=3)  # sanity cleaning
 		print('Shape after equal-subsampling: ', adata.shape)
 
@@ -421,7 +477,7 @@ rule effect_of_nPCs:
 	Computes the E-distance and E-test for each perturbation to control at different number of PCs.
   	"""
 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
-	output: 'tables/effect_of_PCs_{dataset}_tables.csv'
+	output: 'tables/effect_of_nPCs_{dataset}_tables.csv'
 	resources:
 		partition='medium',
 		time='2-23:00:00',
@@ -444,10 +500,8 @@ rule effect_of_nPCs:
 		sigs = {}
 		deltas = {}
 		tests = {}
-		nHVGs = {}
 
 		# Define sample points ("nodes")
-		# ns = np.linspace(1, 100, num=params.iterations)
 		ns_ = leftsided_chebyshev_nodes(params.iterations)
 		ns_ = np.array(ns_ * 100, dtype=int)
 		ns_ = np.unique(ns_)
@@ -456,7 +510,6 @@ rule effect_of_nPCs:
 
    		sc.pp.pca(adata, use_highly_variable=False, n_comps=n_max)
 		for n in ns:
-			nHVGs[n] = n
 			tdata = adata.copy()
 			tdata.obsm['X_pca'] = adata.obsm['X_pca'][:, :int(n)].copy()  # subset PCA to use only n first PCs
         	
@@ -470,16 +523,85 @@ rule effect_of_nPCs:
 			pd.concat(tests),
 			pd.concat(deltas),
 			pd.concat(sigs),
-			pd.concat(nHVGs)
 		], axis=1).reset_index()
-		sdf.columns = ['n', groupby, 'edist', 'pvalue', 'significant', 'pvalue_adj', 'significant_adj', 'delta', 'sigma', 'nHVGs']
+		sdf.columns = ['n', groupby, 'edist', 'pvalue', 'significant', 'pvalue_adj', 'significant_adj', 'delta', 'sigma']
 		sdf['significant_adj'][sdf[groupby]==control]='control'
 		# annotate newly insignificant
 		sdf['significant_adj_new'] = sdf['significant_adj']
 		for g in sdf.perturbation.unique():
-			if sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==True:
+			if sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==n_max)].iloc[0]==True:
 				sdf['significant_adj_new'][(sdf[groupby]==g) & (sdf['significant_adj']==False)] = 'False (lost)'
-			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==False:
+			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==n_max)].iloc[0]==False:
+				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
+		sdf.to_csv(output[0])
+
+rule effect_of_nHVGs:
+	"""
+	Computes the E-distance and E-test for each perturbation to control at different number of PCs.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/effect_of_nHVGs_{dataset}_tables.csv'
+	resources:
+		partition='medium',
+		time='2-23:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	params:
+		iterations=10
+	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
+		# scperturb utils
+		sys.path.insert(1, '../../package/src/')
+		from scperturb import edist, onesided_pca_distances, etest, self_pca_distances
+
+		adata = sc.read(input[0])
+		adata.X = adata.layers['counts'].copy()  # reset to raw counts
+		control = 'control'
+		groupby = 'perturbation'
+
+		sigs = {}
+		deltas = {}
+		tests = {}
+
+		# Define sample points ("nodes")
+		ns_ = leftsided_chebyshev_nodes(params.iterations)
+		ns_ = np.array(ns_ * 4000, dtype=int)
+		ns_ = np.unique(ns_)
+		ns = ns_[ns_>0]
+		n_max = np.max(ns)
+
+		for n in ns:
+			tdata = adata.copy()
+			sc.pp.normalize_per_cell(tdata)
+			sc.pp.log1p(tdata)
+			try:
+				sc.pp.highly_variable_genes(tdata, n_top_genes=int(n), flavor='seurat_v3', layer='counts')
+			except:
+				print('Failed to compute HVGs for n=', n)
+				continue
+			sc.pp.pca(tdata, use_highly_variable=True)
+        	
+			# STATS
+			deltas[n] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)
+			sigs[n] = self_pca_distances(tdata, groupby, verbose=False)
+			# E-test
+			tests[n] = etest(tdata, groupby, control='control', runs=100)
+
+		sdf = pd.concat([
+			pd.concat(tests),
+			pd.concat(deltas),
+			pd.concat(sigs)
+		], axis=1).reset_index()
+		sdf.columns = ['n', groupby, 'edist', 'pvalue', 'significant', 'pvalue_adj', 'significant_adj', 'delta', 'sigma']
+		sdf['significant_adj'][sdf[groupby]==control]='control'
+		# annotate newly insignificant
+		sdf['significant_adj_new'] = sdf['significant_adj']
+		for g in sdf.perturbation.unique():
+			if sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==n_max)].iloc[0]==True:
+				sdf['significant_adj_new'][(sdf[groupby]==g) & (sdf['significant_adj']==False)] = 'False (lost)'
+			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==n_max)].iloc[0]==False:
 				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
 		sdf.to_csv(output[0])
 
@@ -489,6 +611,76 @@ rule effect_of_ncells:
 	"""
 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'tables/effect_of_ncells_{dataset}_tables.csv'
+	resources:
+		partition='medium',
+		time='24:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	params:
+		iterations=10
+	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
+		# scperturb utils
+		sys.path.insert(1, '../../package/src/')
+		from scperturb import edist, onesided_pca_distances, etest, self_pca_distances
+
+		adata = sc.read(input[0])
+		control = 'control'
+		groupby = 'perturbation'
+
+		sigs = {}
+		deltas = {}
+		tests = {}
+		ncells = {}
+
+		# Define sample points ("nodes")
+		total_cells = adata.obs.perturbation.value_counts().iloc[0]  # number of cells per group
+		ns = leftsided_chebyshev_nodes(params.iterations)
+
+		total_counts = np.sum(adata.X>0)
+		for n in ns:
+			# subsample cells
+			tdata = strict_equal_subsampling(adata, 'perturbation', N=int(np.ceil(total_cells * n)))
+			tdata.obs['ncells'] = tdata.X.sum(1)
+			ncells[n] = tdata.obs[groupby].value_counts()
+
+			sc.pp.pca(tdata, use_highly_variable=False)
+			# STATS
+			deltas[n] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)  # THIS THROWS AN ERROR
+			# Found array with 0 sample(s) (shape=(0, 10)) while a minimum of 1 is required by check_pairwise_arrays.
+			sigs[n] = self_pca_distances(tdata, groupby, verbose=False)
+			# E-test
+			tests[n] = etest(tdata, groupby, control='control', runs=100)
+
+		# merge results
+		sdf = pd.concat([
+			pd.concat(tests),
+			pd.concat(deltas),
+			pd.concat(sigs),
+			pd.concat(ncells)
+		], axis=1).reset_index()
+		sdf.columns = ['n', groupby, 'edist', 'pvalue', 'significant', 'pvalue_adj', 'significant_adj', 'delta', 'sigma', 'ncells']
+		sdf['significant_adj'][sdf[groupby]==control]='control'
+
+		# annotate newly insignificant
+		sdf['significant_adj_new'] = sdf['significant_adj']
+		for g in sdf.perturbation.unique():
+			if sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==True:
+				sdf['significant_adj_new'][(sdf[groupby]==g) & (sdf['significant_adj']==False)] = 'False (lost)'
+			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==False:
+				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
+		
+		# export results
+		sdf.to_csv(output[0])
+
+rule effect_of_ncells_:
+	"""
+	Subsamples number of cells, computes E-distance and E-test at each subsampling point.
+	"""
+	input: TEMPDIR / '500_tmp_data_{dataset}.h5'
+	output: 'tables/500_effect_of_ncells_{dataset}_tables.csv'
 	resources:
 		partition='medium',
 		time='24:00:00',

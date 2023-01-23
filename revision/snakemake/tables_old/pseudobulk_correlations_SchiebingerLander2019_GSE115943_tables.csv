@@ -1,0 +1,4 @@
+perturbation,Dox,control,2i (LIF+MEKi+GSK3i)
+Dox,1.0,-1.0,-1.0
+control,-1.0,1.0,1.0
+2i (LIF+MEKi+GSK3i),-1.0,1.0,1.0

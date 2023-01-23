@@ -1,4 +1,5 @@
 # custom
+._.DS_Store
 data/
 .snakemake/
 logs/

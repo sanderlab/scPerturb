@@ -31,7 +31,7 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
         DataFrame with average of pairwise PCA distances between all groups.
     """
 
-    if obsm_key=='X_pca':
+    if obsm_key=='X_pca' and 'X_pca' not in adata.obsm.keys():
         warn('PCA embedding not found, computing...')
         sc.pp.pca(adata)
 
@@ -113,7 +113,7 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca', dist='sqeu
         DataFrame with average PCA distances to control for all groups.
     """
 
-    if obs_key=='X_pca':
+    if obsm_key=='X_pca' and 'X_pca' not in adata.obsm.keys():
         warn('PCA embedding not found, computing...')
         sc.pp.pca(adata)
 
@@ -160,7 +160,7 @@ def self_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', ver
         DataFrame with average PCA distances to control for all groups.
     """
 
-    if obs_key=='X_pca':
+    if obsm_key=='X_pca' and 'X_pca' not in adata.obsm.keys():
         warn('PCA embedding not found, computing...')
         sc.pp.pca(adata)
 
