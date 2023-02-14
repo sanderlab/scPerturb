@@ -4,6 +4,7 @@ import scanpy as sc
 
 from tqdm import tqdm
 from statsmodels.stats.multitest import multipletests
+from sklearn.metrics import pairwise_distances
 from .edistance import edist
 
 def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean', control='control', alpha=0.05, runs=100, correction_method='holm-sidak', verbose=True):
@@ -46,9 +47,19 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean', c
         - significant_adj: If p-value_adj < alpha
     """
 
+    groups = pd.unique(adata.obs[obs_key])
+    
+    # Compute pairwise distances selectively once
+    # (we need pairwise distances within each group and between each group and control)
+    # Note: this could be improved further, since we compute distances within control multiple times here. Speedup likely minimal though.
+    pwds = {}
+    for group in groups:
+        x = adata[adata.obs[obs_key].isin([group, control])].obsm[obsm_key].copy()
+        pwd = pairwise_distances(x,x, metric=dist)
+        pwds[group] = pwd
+
     # Approximate sampling from null distribution (equal distributions)
     res = []
-    groups = pd.unique(adata.obs[obs_key])
     fct = tqdm if verbose else lambda x: x
     for i in fct(range(runs)):
         # per perturbation, shuffle with control and compute e-distance
@@ -57,17 +68,52 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean', c
             if group==control:
                 df.loc[group] = [0]
                 continue
-            mask = adata.obs[obs_key].isin([group, control])
-            subdata = adata[mask].copy()
-            subdata.obs['shuffled'] = np.random.permutation(subdata.obs[obs_key].values)
-            df_ = edist(subdata, 'shuffled', obsm_key=obsm_key, dist=dist, verbose=False).loc[control]
-            df.loc[group] = df_.loc[group]
+            # shuffle the labels
+            labels = adata.obs[obs_key].values[adata.obs[obs_key].isin([group, control])]
+            shuffled_labels = np.random.permutation(labels)
+            
+            # use precomputed pairwise distances
+            sc_pwd = pwds[group]  # precomputed pairwise distances between single cells
+            idx = shuffled_labels==group
+            
+            # Note that this is wrong: sc_pwd[idx, ~idx] but this is correct: sc_pwd[idx, :][:, ~idx]
+            # The first produces a vector, the second a matrix (we need the matrix)
+            delta = np.mean(sc_pwd[idx, :][:, ~idx])
+            sigma = np.mean(sc_pwd[idx, :][:, idx])
+            sigma_c = np.mean(sc_pwd[~idx, :][:, ~idx])
+            
+            edistance = 2 * delta - sigma - sigma_c
+
+            df.loc[group] = edistance
         res.append(df.sort_index())
 
     # "Sampling" from original distribution without shuffling (hypothesis)
-    df = edist(adata, obs_key, obsm_key=obsm_key, dist=dist, verbose=False).loc[control]
-    df = pd.DataFrame(df.sort_index())
-    df.columns = ['edist']
+    df_old = edist(adata, obs_key, obsm_key=obsm_key, dist=dist, verbose=False).loc[control]
+    df_old.columns = ['edist']
+    
+    # the following is faster than the above and produces the same result
+    original = []
+    for group in groups:
+        if group==control:
+            original.append(0)
+            continue
+        # shuffle the labels
+        labels = adata.obs[obs_key].values[adata.obs[obs_key].isin([group, control])]
+        
+        # use precomputed pairwise distances
+        sc_pwd = pwds[group]  # precomputed pairwise distances between single cells
+        idx = labels==group
+        
+        # Note that this is wrong: sc_pwd[idx, ~idx] but this is correct: sc_pwd[idx, :][:, ~idx]
+        # The first produces a vector, the second a matrix (we need the matrix)
+        delta = np.mean(sc_pwd[idx, :][:, ~idx])
+        sigma = np.mean(sc_pwd[idx, :][:, idx])
+        sigma_c = np.mean(sc_pwd[~idx, :][:, ~idx])
+        
+        edistance = 2 * delta - sigma - sigma_c
+        original.append(edistance)
+    df = pd.DataFrame(original, index=groups, columns=['edist'])
+    df = df.sort_index()
 
     # Evaluate test (hypothesis vs null hypothesis)
     results = pd.concat([r['edist'] - df['edist'] for r in res], axis=1) > 0  # count times shuffling resulted in larger e-distance
