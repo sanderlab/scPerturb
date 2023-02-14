@@ -8,6 +8,7 @@ logs/
 .DS_Store
 revision/snakemake/tables/
 revision/snakemake/figures/
+*.h5ad
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
