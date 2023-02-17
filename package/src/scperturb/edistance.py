@@ -37,12 +37,14 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
 
     groups = pd.unique(adata.obs[obs_key])
     df = pd.DataFrame(index=groups, columns=groups, dtype=float)
+    X = adata.obsm[obsm_key].copy()
+    y = adata.obs[obs_key].copy()
     fct = tqdm if verbose else lambda x: x
     for i, p1 in enumerate(fct(groups)):
-        x1 = adata[adata.obs[obs_key]==p1].obsm[obsm_key].copy()
+        x1 = X[y==p1].copy()
         N = len(x1)
         for p2 in groups[i:]:
-            x2 = adata[adata.obs[obs_key]==p2].obsm[obsm_key].copy()
+            x2 = X[y==p2].copy()
             pwd = pairwise_distances(x1, x2, metric=dist)
             M = len(x2)
             factor = N * M
