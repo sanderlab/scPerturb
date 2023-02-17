@@ -10,6 +10,7 @@ revision/snakemake/tables/
 revision/snakemake/figures/
 *.h5ad
 *.prof
+*.dat
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

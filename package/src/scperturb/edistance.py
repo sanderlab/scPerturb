@@ -6,7 +6,7 @@ from tqdm import tqdm
 from sklearn.metrics import pairwise_distances
 from warnings import warn
 
-def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', verbose=True):
+def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', correction_factor=False, verbose=True):
     """Average of pairwise PCA distances between cells of each group in obs_key.
     For each pair of groups defined in adata.obs[obs_key] (e.g. perturbations)
     computes all pairwise distances between cells in adata.obsm[obsm_key] (e.g. PCA space)
@@ -22,6 +22,8 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
         Key for embedding coordinates to use.
     dist: `str` for any distance in scipy.spatial.distance (default: `sqeuclidean`)
         Distance metric to use in embedding space.
+    correction_factor: `bool` (default: `False`)
+        Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -46,7 +48,7 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
         for p2 in groups[i:]:
             x2 = X[y==p2].copy()
             pwd = pairwise_distances(x1, x2, metric=dist)
-            M = len(x2)
+            M = len(x2) if (p1!=p2) & ~correction_factor else len(x2)-1
             factor = N * M
             mean_pwd = np.sum(pwd) / factor
             df.loc[p1, p2] = mean_pwd
@@ -56,7 +58,7 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
     df.name = 'pairwise PCA distances'
     return df
 
-def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None, dist='sqeuclidean', verbose=True):
+def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None, dist='sqeuclidean', correction_factor=False, verbose=True):
     """Computes the edistance to control. Accepts precomputed pwd.
     Computes the pairwise E-distances between all groups of cells defined in
     adata.obs[obs_key] (e.g. perturbations). Distances are computed in embedding
@@ -72,6 +74,8 @@ def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None, dist='sqeuc
         Key for embedding coordinates to use.
     dist: `str` for any distance in scipy.spatial.distance (default: `sqeuclidean`)
         Distance metric to use in embedding space.
+    correction_factor: `bool` (default: `False`)
+        Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -81,7 +85,7 @@ def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None, dist='sqeuc
         DataFrame with pairwise E-distances between all groups.
     """
 
-    pwd = pairwise_pca_distances(adata, obs_key=obs_key, obsm_key=obsm_key, dist=dist, verbose=verbose) if pwd is None else pwd
+    pwd = pairwise_pca_distances(adata, obs_key=obs_key, obsm_key=obsm_key, dist=dist, correction_factor=correction_factor, verbose=verbose) if pwd is None else pwd
     # derive basic statistics
     sigmas = np.diag(pwd)
     deltas = pwd
