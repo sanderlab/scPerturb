@@ -1,5 +1,5 @@
 # downloads GEO supplements (which usuall contains counts matrices and metadata)
-# check what this pipeline want to do by typing "snakemake -n"
+# check what this pipeline wants to do by typing "snakemake -n"
 # run as "snakemake --jobs 100 -k"
 # (For BIH cluster: snakemake --profile=cubi-v1 --jobs 1000 -k)
 
