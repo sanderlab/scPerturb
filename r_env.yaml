@@ -1,0 +1,13 @@
+name: r_env
+
+channels:
+ - conda-forge
+ - bioconda
+ - defaults
+
+dependencies:
+  - python=3.9
+  - conda-forge::r-base>=4.1
+  - conda-forge::r-seurat
+  - conda-forge::r-irkernel
+  # - bioconda::bioconductor-zellkonverter
