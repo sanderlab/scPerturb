@@ -6,7 +6,8 @@ from tqdm import tqdm
 from sklearn.metrics import pairwise_distances
 from warnings import warn
 
-def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', correction_factor=False, verbose=True):
+def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
+                           correction_factor=False, verbose=True):
     """Average of pairwise PCA distances between cells of each group in obs_key.
     For each pair of groups defined in adata.obs[obs_key] (e.g. perturbations)
     computes all pairwise distances between cells in adata.obsm[obsm_key] (e.g. PCA space)
@@ -58,7 +59,8 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
     df.name = 'pairwise PCA distances'
     return df
 
-def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None, dist='sqeuclidean', correction_factor=False, verbose=True):
+def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None, 
+          dist='sqeuclidean', correction_factor=False, verbose=True):
     """Computes the edistance to control. Accepts precomputed pwd.
     Computes the pairwise E-distances between all groups of cells defined in
     adata.obs[obs_key] (e.g. perturbations). Distances are computed in embedding
@@ -85,14 +87,18 @@ def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None, dist='sqeuc
         DataFrame with pairwise E-distances between all groups.
     """
 
-    pwd = pairwise_pca_distances(adata, obs_key=obs_key, obsm_key=obsm_key, dist=dist, correction_factor=correction_factor, verbose=verbose) if pwd is None else pwd
+    pwd = pairwise_pca_distances(adata, obs_key=obs_key, obsm_key=obsm_key, 
+                                 dist=dist, correction_factor=correction_factor, 
+                                 verbose=verbose) if pwd is None else pwd
     # derive basic statistics
     sigmas = np.diag(pwd)
     deltas = pwd
     estats = 2 * deltas - sigmas - sigmas[:, np.newaxis]
     return estats
 
-def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca', dist='sqeuclidean', verbose=True):
+def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca', 
+                           dist='sqeuclidean', correction_factor=False, 
+                           verbose=True):
     """Average of pairwise PCA distances between cells of each group in obs_key with control group.
     For each group defined in adata.obs[obs_key] (e.g. perturbations)
     computes all pairwise distances between cells in adata.obsm[obsm_key] (e.g. PCA space)
@@ -110,6 +116,8 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca', dist='sqeu
         Key for embedding coordinates to use.
     dist: `str` for any distance in scipy.spatial.distance (default: `sqeuclidean`)
         Distance metric to use in embedding space.
+    correction_factor: `bool` (default: `False`)
+        Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -133,7 +141,7 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca', dist='sqeu
     for p in fct(groups):
         x2 = adata[adata.obs[obs_key]==p].obsm[obsm_key].copy()
         pwd = pairwise_distances(x1, x2, metric=dist)
-        M = len(x2)
+        M = len(x2) if (p==control) & ~correction_factor else len(x2)-1
         factor = N * M  # Thanks to Garrett Wong for finding this bug
         mean_pwd = np.sum(pwd) / factor
         df.loc[p] = mean_pwd
@@ -141,7 +149,8 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca', dist='sqeu
     df.name = f'PCA distances to {control}'
     return df
 
-def self_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', verbose=True):
+def self_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', 
+                       verbose=True):
     """Average of pairwise PCA distances between cells within each group in obs_key.
     For each group defined in adata.obs[obs_key] (e.g. perturbations)
     computes all pairwise distances between cells within in the space given by adata.obsm[obsm_key] (e.g. PCA space)
@@ -185,7 +194,9 @@ def self_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', ver
     df.name = 'PCA distances within groups'
     return df
 
-def edist_to_control(adata, obs_key='perturbation', control='control', obsm_key='X_pca', dist='sqeuclidean', verbose=True):
+def edist_to_control(adata, obs_key='perturbation', control='control', 
+                     obsm_key='X_pca', dist='sqeuclidean',  
+                     correction_factor=False, verbose=True):
     """Computes the edistance to control.
     Computes the all E-distances between all groups of cells defined in
     adata.obs[obs_key] (e.g. perturbations) and control cells. Distances are computed in embedding
@@ -201,6 +212,8 @@ def edist_to_control(adata, obs_key='perturbation', control='control', obsm_key=
         Key for embedding coordinates to use.
     dist: `str` for any distance in scipy.spatial.distance (default: `sqeuclidean`)
         Distance metric to use in embedding space.
+    correction_factor: `bool` (default: `False`)
+        Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -210,7 +223,10 @@ def edist_to_control(adata, obs_key='perturbation', control='control', obsm_key=
         DataFrame with E-distances between all groups and control group.
     """
 
-    deltas_to_c = onesided_pca_distances(adata, obs_key=obs_key, control=control, obsm_key=obsm_key, dist=dist, verbose=verbose)
+    deltas_to_c = onesided_pca_distances(adata, obs_key=obs_key, control=control, 
+                                         obsm_key=obsm_key, dist=dist, 
+                                         correction_factor=correction_factor, 
+                                         verbose=verbose)
     sigmas = self_pca_distances(adata, obs_key, obsm_key=obsm_key, dist=dist, verbose=False)
     # derive basic statistics
     ed_to_c = 2 * deltas_to_c - sigmas - sigmas.loc[control]
