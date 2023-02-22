@@ -7,7 +7,13 @@ from statsmodels.stats.multitest import multipletests
 from sklearn.metrics import pairwise_distances
 from .edistance import edist
 
-def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean', control='control', alpha=0.05, runs=100, correction_method='holm-sidak', verbose=True):
+# TODO make etest allow for multiple controls (accept list of controls)
+# TODO make etest allow to use correction factor (divide by N-1 instead of N)
+
+def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
+          control='control', alpha=0.05, runs=1000, 
+          correction_method='holm-sidak', correction_factor=False, 
+          verbose=True):
     """Performs Monte Carlo permutation test with E-distance as test statistic.
     Tests for each group of cells defined in adata.obs[obs_key] if it is significantly
     different from control based on the E-distance in adata.obsm[obsm_key] space.
@@ -33,6 +39,8 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean', c
         We do not recommend going lower than `100` and suggest between `100` and `10000` iterations.
     correction_method: `None` or any valid method for statsmodels.stats.multitest.multipletests (default: `'holm-sidak'`)
         Method used for multiple-testing correction, since we are testing each group in `adata.obs[obs_key]`.
+    correction_factor: `bool` (default: `False`)
+        Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -116,8 +124,10 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean', c
     df = df.sort_index()
 
     # Evaluate test (hypothesis vs null hypothesis)
-    results = pd.concat([r['edist'] - df['edist'] for r in res], axis=1) > 0  # count times shuffling resulted in larger e-distance
-    pvalues = np.sum(results, axis=1) / runs
+    # count times shuffling resulted in larger e-distance
+    results = pd.concat([r['edist'] - df['edist'] for r in res], axis=1) > 0  
+    n_failure = np.min(np.sum(results, axis=1), 1)
+    pvalues = n_failure / runs
 
     # Apply multiple testing correction
     significant_adj, pvalue_adj, _, _ = multipletests(pvalues, alpha=alpha, method=correction_method)
