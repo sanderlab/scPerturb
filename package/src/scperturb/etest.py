@@ -125,17 +125,15 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
 
     # Evaluate test (hypothesis vs null hypothesis)
     # count times shuffling resulted in larger e-distance
-    results = pd.concat([r['edist'] - df['edist'] for r in res], axis=1) > 0  
-    n_failure = np.min(np.sum(results, axis=1), 1)
-    pvalues = n_failure / runs
+    results = np.array(pd.concat([r['edist'] - df['edist'] for r in res], axis=1) > 0, dtype=int)
+    n_failures = pd.Series(np.clip(np.sum(results, axis=1), 1, np.inf), index=df.index)
+    pvalues = n_failures / runs
 
     # Apply multiple testing correction
-    significant_adj, pvalue_adj, _, _ = multipletests(pvalues, alpha=alpha, method=correction_method)
+    significant_adj, pvalue_adj, _, _ = multipletests(pvalues.values, alpha=alpha, method=correction_method)
 
     # Aggregate results
-    tab = pd.concat([df['edist'], pvalues], axis=1)
-    tab.columns = ['edist', 'pvalue']
-    tab['significant'] = tab.pvalue < alpha
-    tab['pvalue_adj'] = pvalue_adj
-    tab['significant_adj'] = significant_adj
+    tab = pd.DataFrame({'edist': df['edist'], 'pvalue': pvalues, 
+                        'significant': pvalues < alpha, 'pvalue_adj': pvalue_adj, 
+                        'significant_adj': significant_adj}, index=df.index)
     return tab
