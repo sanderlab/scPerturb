@@ -1,0 +1,64 @@
+---
+title: "Basic-Usage-Vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Basic-Usage-Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(scperturbR)
+```
+
+```{r}
+path <- '../inst/'
+expression_matrix <- Seurat::ReadMtx(
+  paste0(path, 'matrix.mtx'),
+  paste0(path, 'barcodes.csv'),
+  paste0(path, 'genes.csv'),
+  cell.column = 1,
+  feature.column = 2,
+  cell.sep = ",",
+  feature.sep = ",",
+  skip.cell = 1,
+  skip.feature = 1,
+)
+latent <- read.csv(paste0(path, "/seurat_pca.csv"), row.names = 1)
+metadata <- read.csv(paste0(path, "/seurat_metadata.csv"), row.names = 1)
+colnames(expression_matrix) <- rownames(metadata)
+seurat_object <- CreateSeuratObject(counts = expression_matrix,
+                                             meta.data = metadata)
+seurat_object[["pca"]] <- CreateDimReducObject(embeddings = as.matrix(latent), key = "pca_", assay = DefaultAssay(seurat_object))
+```
+
+```{r}
+seurat_object
+```
+
+```{r}
+et <- etest(seurat_object = seurat_object, groupby = 'perturbation', control = 'control', reduction = 'pca')
+```
+
+```{r}
+head(et)
+```
+
+```{r}
+df <- edist(seurat_object, groupby = 'perturbation', reduction = 'pca', sample_correction = FALSE, verbose = TRUE)
+```
+
+```{r}
+head(df)
+```
+
+```{r}
+heatmap(as.matrix(df))
+```

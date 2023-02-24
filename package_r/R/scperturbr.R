@@ -17,21 +17,28 @@ library(rdist)
 library(energy)
 
 
-#' Performs E-testing on a Seurat object
+#' @title etest
 #'
-#' Computes E-test statistics for each group in a Seurat object, using the
-#' E-distance in space given by reduction to the group defined by control.
+#' @description Performs E-testing on a Seurat object.
+#'     Computes E-test statistics for each group in a Seurat object,
+#'     using the E-distance in space given by reduction to the group defined
+#'     by control.
 #' @param seurat_object An object of class Seurat.
 #' @param groupy An object of class character. Points to the column in the
-#' Seurat object's meta data that contains the group labels.
+#'     Seurat object's meta data that contains the group labels.
 #' @param control An object of class character. The group that is used as the
-#' control.
+#'     control.
 #' @param reduction An object of class character. The reduction / embedding in
-#' seurat_object that is used to compute the E-distance in.
+#'     seurat_object that is used to compute the E-distance in.
 #' @return Returns an object of class data.frame. For each group contains the
-#' E-test p-value and the E-distance to control group.
+#'     E-test p-value and the E-distance to control group.
 #' @examples
-#' # Add some code illustrating how to use the function
+#'     # Add some code illustrating how to use the function
+#' @importFrom Seurat Embeddings VariableFeatures RunPCA
+#' @importFrom energy eqdist.etest
+#' @importFrom stats dist
+#' @importFrom dplyr select
+#' @export
 etest <- function(seurat_object, groupby = "perturbation", control = "control",
                   reduction = "pca", verbose = TRUE, permutations = 1000) {
     if (class(seurat_object) != "Seurat") {
@@ -74,22 +81,27 @@ etest <- function(seurat_object, groupby = "perturbation", control = "control",
     return(df)
 }
 
-#' Computes pairwise E-distances on a Seurat object
+#' @title edist
 #'
-#' Computes E-distance between all groups in a Seurat object in space given by
-#' reduction.
+#' @description Computes pairwise E-distances on a Seurat object.
+#'     Computes E-distance between all groups in a Seurat object in space
+#'     given by reduction.
 #' @param seurat_object An object of class Seurat.
 #' @param groupy An object of class character. Points to the column in the
-#' Seurat object's meta data that contains the group labels.
+#'     Seurat object's meta data that contains the group labels.
 #' @param reduction An object of class character. The reduction / embedding in
-#' seurat_object that is used to compute the E-distance in.
+#'     seurat_object that is used to compute the E-distance in.
 #' @param sample_correction An object of class logical. If TRUE, the
-#' E-distances are corrected for sample size. Will make it not a proper
-#' distance, leads to negative values.
+#'     E-distances are corrected for sample size. Will make it not a proper
+#'     distance, leads to negative values.
 #' @return Returns an object of class data.frame. For each group contains the
-#' E-test p-value and the E-distance to control group.
+#'     E-test p-value and the E-distance to control group.
 #' @examples
-#' # Add some code illustrating how to use the function
+#'     # Add some code illustrating how to use the function
+#' @importFrom Seurat Embeddings VariableFeatures RunPCA
+#' @importFrom rdist cdist pdist
+#' @importFrom dplyr select
+#' @export
 edist <- function(seurat_object, groupby = "perturbation", reduction = "pca",
                   sample_correction = FALSE, verbose = TRUE) {
     if (class(seurat_object)!="Seurat") {

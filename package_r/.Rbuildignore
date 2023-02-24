@@ -1,0 +1,5 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+README.md
+notebooks/
+Basic-Usage-Vignette.Rmd

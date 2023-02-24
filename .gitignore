@@ -9,8 +9,20 @@ logs/
 revision/snakemake/tables/
 revision/snakemake/figures/
 *.h5ad
+*.mtx
+barcodes.csv
+genes.csv
 *.prof
 *.dat
+
+# R stuff
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+.Rapp.history
+.Ruserdata
+seurat_*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -174,3 +186,4 @@ cython_debug/
 #.idea/
 Footer
 © 2022 GitHub, Inc.
+.Rproj.user
