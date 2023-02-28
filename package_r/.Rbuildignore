@@ -3,3 +3,6 @@
 README.md
 notebooks/
 Basic-Usage-Vignette.Rmd
+^LICENSE\.md$
+^cran-comments\.md$
+^\.github$

@@ -16,14 +16,20 @@ etest(
 \arguments{
 \item{seurat_object}{An object of class Seurat.}
 
+\item{groupby}{An object of class character. Points to the column in the
+Seurat object's meta data that contains the group labels.}
+
 \item{control}{An object of class character. The group that is used as the
 control.}
 
 \item{reduction}{An object of class character. The reduction / embedding in
 seurat_object that is used to compute the E-distance in.}
 
-\item{groupy}{An object of class character. Points to the column in the
-Seurat object's meta data that contains the group labels.}
+\item{verbose}{An object of class logical. If TRUE, prints messages.
+Default is TRUE.}
+
+\item{permutations}{An object of class integer. The number of permutations
+used to compute the p-value. Default is 1000.}
 }
 \value{
 Returns an object of class data.frame. For each group contains the

@@ -9,9 +9,6 @@ logs/
 revision/snakemake/tables/
 revision/snakemake/figures/
 *.h5ad
-*.mtx
-barcodes.csv
-genes.csv
 *.prof
 *.dat
 
@@ -22,7 +19,6 @@ genes.csv
 *.Rproj
 .Rapp.history
 .Ruserdata
-seurat_*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -24,12 +24,16 @@ library(energy)
 #'     using the E-distance in space given by reduction to the group defined
 #'     by control.
 #' @param seurat_object An object of class Seurat.
-#' @param groupy An object of class character. Points to the column in the
+#' @param groupby An object of class character. Points to the column in the
 #'     Seurat object's meta data that contains the group labels.
 #' @param control An object of class character. The group that is used as the
 #'     control.
 #' @param reduction An object of class character. The reduction / embedding in
 #'     seurat_object that is used to compute the E-distance in.
+#' @param verbose An object of class logical. If TRUE, prints messages.
+#'     Default is TRUE.
+#' @param permutations An object of class integer. The number of permutations
+#'    used to compute the p-value. Default is 1000.
 #' @return Returns an object of class data.frame. For each group contains the
 #'     E-test p-value and the E-distance to control group.
 #' @examples
@@ -41,7 +45,7 @@ library(energy)
 #' @export
 etest <- function(seurat_object, groupby = "perturbation", control = "control",
                   reduction = "pca", verbose = TRUE, permutations = 1000) {
-    if (class(seurat_object) != "Seurat") {
+    if (!inherits(seurat_object, "Seurat")) {
         stop("The first argument must be a Seurat object.")
     }
     if (!(reduction %in% names(seurat_object@reductions))) {
@@ -87,13 +91,15 @@ etest <- function(seurat_object, groupby = "perturbation", control = "control",
 #'     Computes E-distance between all groups in a Seurat object in space
 #'     given by reduction.
 #' @param seurat_object An object of class Seurat.
-#' @param groupy An object of class character. Points to the column in the
+#' @param groupby An object of class character. Points to the column in the
 #'     Seurat object's meta data that contains the group labels.
 #' @param reduction An object of class character. The reduction / embedding in
 #'     seurat_object that is used to compute the E-distance in.
 #' @param sample_correction An object of class logical. If TRUE, the
 #'     E-distances are corrected for sample size. Will make it not a proper
 #'     distance, leads to negative values.
+#' @param verbose An object of class logical. If TRUE, prints messages.
+#'    Default is TRUE.
 #' @return Returns an object of class data.frame. For each group contains the
 #'     E-test p-value and the E-distance to control group.
 #' @examples
@@ -104,7 +110,7 @@ etest <- function(seurat_object, groupby = "perturbation", control = "control",
 #' @export
 edist <- function(seurat_object, groupby = "perturbation", reduction = "pca",
                   sample_correction = FALSE, verbose = TRUE) {
-    if (class(seurat_object)!="Seurat") {
+    if (!inherits(seurat_object, "Seurat")) {
         stop("The first argument must be a Seurat object.")
     }
     if (!(reduction %in% names(seurat_object@reductions))) {

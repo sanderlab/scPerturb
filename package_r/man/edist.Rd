@@ -15,6 +15,9 @@ edist(
 \arguments{
 \item{seurat_object}{An object of class Seurat.}
 
+\item{groupby}{An object of class character. Points to the column in the
+Seurat object's meta data that contains the group labels.}
+
 \item{reduction}{An object of class character. The reduction / embedding in
 seurat_object that is used to compute the E-distance in.}
 
@@ -22,8 +25,8 @@ seurat_object that is used to compute the E-distance in.}
 E-distances are corrected for sample size. Will make it not a proper
 distance, leads to negative values.}
 
-\item{groupy}{An object of class character. Points to the column in the
-Seurat object's meta data that contains the group labels.}
+\item{verbose}{An object of class logical. If TRUE, prints messages.
+Default is TRUE.}
 }
 \value{
 Returns an object of class data.frame. For each group contains the
