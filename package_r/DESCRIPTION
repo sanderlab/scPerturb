@@ -7,7 +7,7 @@ Maintainer: Stefan Peidli <stefanpeidli@gmail.com>
 Description: R version of 'scperturb' tool for single-cell perturbation 
     analysis. Contains wrappers for performing E-statistics for Seurat objects. 
     More details on the method can be found in Peidli et al. (2023) 
-    <10.1101/2022.08.20.504663> and in Székely and Rizzo (2004).
+    <doi:10.1101/2022.08.20.504663> and in Székely and Rizzo (2004).
 License: MIT + file LICENSE
 URL: https://github.com/sanderlab/scPerturb/tree/master/package_r
 BugReports: https://github.com/sanderlab/scPerturb/issues
