@@ -4,7 +4,7 @@ Title: E-statistics for Seurat Objects
 Version: 0.1.0
 Author: Stefan Peidli
 Maintainer: Stefan Peidli <stefanpeidli@gmail.com>
-Description: R version of scPerturb tool for single-cell perturbation analysis.
+Description: R version of 'scperturb' tool for single-cell perturbation analysis.
     Contains wrappers for performing E-statistics for Seurat objects.
 License: MIT + file LICENSE
 URL: https://github.com/sanderlab/scPerturb/tree/master/package_r
@@ -21,8 +21,5 @@ LazyData: true
 Language: en-US
 RoxygenNote: 7.2.3
 Suggests: 
-    knitr,
-    rmarkdown,
     testthat (>= 3.0.0)
-VignetteBuilder: knitr
 Config/testthat/edition: 3
