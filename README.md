@@ -3,13 +3,14 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/sanderlab/scperturb)
 
 # scPerturb: A resource and a python tool for single-cell perturbation data
+doi:[10.1101/2022.08.20.504663](https://doi.org/10.1101/2022.08.20.504663)
 
 ## Where to find the data
-The datasets are available to download on [scperturb.org](https://scperturb.org/) and alternatively on Zenodo:
+The datasets are available to download on [scperturb.org](https://scperturb.org/) (where you can also find a table of all included datasets) and alternatively on Zenodo:
 - [RNA data](https://zenodo.org/record/7041849)
 - [ATAC data](https://zenodo.org/record/7058382)
 
-## scperturb for python
+## scperturb for python (integrates with scanpy)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/scperturb?label=PyPI%20downloads)
 
 A python package to compute E-distances in single-cell perturbation data and perform E-tests.
@@ -32,6 +33,15 @@ estats = edist(adata, obs_key='perturbation')
 estats_control = estats.loc['control']
 # E-test for difference to control
 df = etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean', control='control', alpha=0.05, runs=100)
+```
+
+## scperturbR for R (integrates with Seurat)
+[![R-CMD-check](https://github.com/sanderlab/scPerturb/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sanderlab/scPerturb/actions/workflows/R-CMD-check.yaml)
+
+We wrote an R version of scperturb that works with Seurat objects. You can find it as [scperturbR on CRAN](https://cran.r-project.org/package=scperturbR). A basic usage vignette is WIP.
+Install using:
+```
+install.packages('scperturbR')
 ```
 
 ## Instructions to run the code to recreate the manuscript figures
