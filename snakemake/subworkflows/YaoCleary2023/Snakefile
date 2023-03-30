@@ -1,0 +1,40 @@
+"""
+Author: Stefan Peidli
+Date: 16.03.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+### RULES ###
+rule YaoCleary2023_download:
+    output: TEMPDIR / 'YaoCleary2023/downloaded.flag'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        cd {TEMPDIR}/YaoCleary2023
+        wget -O GSE221321_RAW.tar 'http://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE221321&format=file'
+        tar -xvf GSE221321_RAW.tar
+        rm GSE221321_RAW.tar
+        gunzip *.gz
+        touch {output}
+        """
+
+rule YaoCleary2023:
+    input: TEMPDIR / 'YaoCleary2023/downloaded.flag'
+    output: TEMPDIR / 'YaoCleary2023/YaoCleary2023.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script: 'YaoCleary2023.py'

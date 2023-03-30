@@ -1,0 +1,63 @@
+"""
+Author: Stefan Peidli
+Date: 16.03.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+### RULES ###
+rule QinTape2023:
+    input:
+        DATADIR / 'QinTape2023_scRNAseq.h5ad',
+        # DATADIR / 'QinTape2023_cytof.h5ad'
+
+rule QinTape2023_download:
+    output:
+        TEMPDIR / 'QinTape2023/downloaded.flag'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        cd {TEMPDIR}/QinTape2023
+        wget https://zenodo.org/record/7586958/files/Count%20Matrices%20%26%20CellRanger%20Reports.zip
+        wget https://zenodo.org/record/7586958/files/Signal-Perturbation_all-cells.csv.zip
+        wget https://zenodo.org/record/7586958/files/WENR-Permutation_all-cells.csv.zip
+        wget https://zenodo.org/record/7586958/files/WNT-EGF-Competition_all-cells.csv.zip
+        wget https://zenodo.org/record/7586958/files/CellChat-Follow-up_all-cells.csv.zip
+        unzip 'Count Matrices & CellRanger Reports.zip'
+        unzip Signal-Perturbation_all-cells.csv.zip
+        unzip WENR-Permutation_all-cells.csv.zip
+        unzip WNT-EGF-Competition_all-cells.csv.zip
+        touch {output}
+        """
+
+rule QinTape2023_scRNAseq:
+    input: TEMPDIR / 'QinTape2023/downloaded.flag'
+    output: DATADIR / 'QinTape2023_scRNAseq.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script:
+        'QinTape2023_scRNAseq.py'
+
+rule QinTape2023_cytof:
+    input: TEMPDIR / 'QinTape2023/downloaded.flag'
+    output: DATADIR / 'QinTape2023_cytof.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script:
+        'QinTape2023_cytof.py'

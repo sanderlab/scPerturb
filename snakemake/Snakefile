@@ -15,54 +15,21 @@ configfile: "../config.yaml"
 DATADIR = Path(config['DOWNDIR'])  # place to store data
 TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
 
+### SUBWORKFLOWS ###
+include: "subworkflows/JoungZhang2023/Snakefile"
+include: "subworkflows/McFalineTrapnell2023/Snakefile"
+include: "subworkflows/QinTape2023/Snakefile"
+include: "subworkflows/YaoCleary2023/Snakefile"
+include: "subworkflows/WuBassett2023/Snakefile"
+
 ### RULES ###
 rule all:
     input:
-        TEMPDIR / 'JoungZhang2023/GSE217066_210715_combinatorial.h5ad',
-        TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad'
-
-rule JoungZhang2023_download:
-    output:
-        combinatorial = TEMPDIR / 'JoungZhang2023/GSE217066_210715_combinatorial.h5ad',
-        atlas = TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad'
-    shell:
-        """
-        cd {TEMPDIR}/JoungZhang2023
-        wget -O GSE217066_210715_combinatorial.h5ad.gz https://ftp.ncbi.nlm.nih.gov/geo/series/GSE217nnn/GSE217066/suppl/GSE217066_210715_combinatorial.h5ad.gz
-        wget -O GSE217460_210322_TFAtlas.h5ad.gz https://ftp.ncbi.nlm.nih.gov/geo/series/GSE217nnn/GSE217460/suppl/GSE217460_210322_TFAtlas.h5ad.gz
-        gunzip *.gz
-        """
-
-rule JoungZhang2023_process:
-    input:
-        combinatorial = TEMPDIR / 'JoungZhang2023/GSE217066_210715_combinatorial.h5ad',
-        atlas = TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad'
-    output:
-        combinatorial = DATADIR / 'JoungZhang2023_combinatorial.h5ad',
-        atlas = DATADIR / 'JoungZhang2023_atlas.h5ad'
-    script:
-        'JoungZhang2023.py'
-
-rule QinTape2023_download:
-    output:
-        TEMPDIR / 'QinTape2023/downloaded.flag'
-    shell:
-        """
-        cd {TEMPDIR}/QinTape2023
-        wget https://zenodo.org/record/7586958/files/aug21_WT.rds
-        wget https://zenodo.org/record/7586958/files/Count%20Matrices%20%26%20CellRanger%20Reports.zip
-        wget https://zenodo.org/record/7586958/files/DA_INTepi_fib.rds
-        wget https://zenodo.org/record/7586958/files/DA_INTepi_geno.rds
-        wget https://zenodo.org/record/7586958/files/INTepi.rds
-        wget https://zenodo.org/record/7586958/files/Signal-Perturbation_all-cells.csv.zip
-        wget https://zenodo.org/record/7586958/files/WENR-Permutation_all-cells.csv.zip
-        wget https://zenodo.org/record/7586958/files/WNT-EGF-Competition_all-cells.csv.zip
-        wget https://zenodo.org/record/7586958/files/CellChat-Follow-up_all-cells.csv.zip
-        wget https://zenodo.org/record/7586958/files/jan21_crctme_A.rds
-        wget https://zenodo.org/record/7586958/files/jan21_crctme_AK.rds
-        wget https://zenodo.org/record/7586958/files/jan21_crctme_AKP.rds
-        wget https://zenodo.org/record/7586958/files/jan21_crctme_WT.rds
-        wget https://zenodo.org/record/7586958/files/jan21_monocultures.rds
-        wget https://zenodo.org/record/7586958/files/jan21_tmecontrols.rds
-        touch {output}
-        """
+        # Finished or WIP
+        rules.JoungZhang2023.input,
+        rules.YaoCleary2023.output,
+        rules.QinTape2023.output,
+        rules.WuBassett2023.output,
+        # WIP
+        rules.McFalineTrapnell2023_download.output,
+        

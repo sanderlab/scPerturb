@@ -1,0 +1,61 @@
+"""
+Author: Stefan Peidli
+Date: 16.03.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+### RULES ###
+rule JoungZhang2023:
+    input:
+        DATADIR / 'JoungZhang2023_combinatorial.h5ad',
+        DATADIR / 'JoungZhang2023_atlas.h5ad'
+
+rule JoungZhang2023_download:
+    output:
+        combinatorial = TEMPDIR / 'JoungZhang2023/GSE217066_210715_combinatorial.h5ad',
+        atlas = TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        cd {TEMPDIR}/JoungZhang2023
+        wget -O GSE217066_210715_combinatorial.h5ad.gz https://ftp.ncbi.nlm.nih.gov/geo/series/GSE217nnn/GSE217066/suppl/GSE217066_210715_combinatorial.h5ad.gz
+        wget -O GSE217460_210322_TFAtlas.h5ad.gz https://ftp.ncbi.nlm.nih.gov/geo/series/GSE217nnn/GSE217460/suppl/GSE217460_210322_TFAtlas.h5ad.gz
+        gunzip *.gz
+        """
+
+rule JoungZhang2023_atlas:
+    input:
+        atlas = TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad'
+    output:
+        atlas = DATADIR / 'JoungZhang2023_atlas.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script:
+        'JoungZhang2023_atlas.py'
+
+rule JoungZhang2023_combinatorial:
+    input:
+        combinatorial = TEMPDIR / 'JoungZhang2023/GSE217066_210715_combinatorial.h5ad',
+    output:
+        combinatorial = DATADIR / 'JoungZhang2023_combinatorial.h5ad',
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script:
+        'JoungZhang2023_combinatorial.py'

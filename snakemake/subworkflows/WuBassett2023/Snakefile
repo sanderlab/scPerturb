@@ -1,0 +1,22 @@
+"""
+Author: Stefan Peidli
+Date: 30.03.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+
+### RULES ###
+rule WuBassett2023:
+    input: DATADIR / 'CRISPR_transcriptome_with_sgRNA_raw_all_data.h5ad'  # obtained through personal communication with authors
+    output: DATADIR / 'WuBassett2023/WuBassett2023.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script: 'WuBassett2023.py'

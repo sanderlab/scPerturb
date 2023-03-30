@@ -1,0 +1,36 @@
+"""
+Author: Stefan Peidli
+Date: 16.03.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+### RULES ###
+rule DATASETID_download:
+    output:
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        # DOWNLOAD DATA
+        """
+
+rule DATASETID:
+    input:
+    output:
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script:
+        'DATASETID.py'
