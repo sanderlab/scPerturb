@@ -20,19 +20,14 @@ TEMPDIR = Path(config["TEMPDIR"])
 DOWNDIR = Path(config["DOWNDIR"])
 
 # Load list of RNA datasets available via scPerturb
-tab = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx')  # supplemental table
-df = tab[tab['Modality = Data type'].isin(['RNA', 'RNA + protein (RNA)'])]
+df = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx')  # supplemental table
+df = df[df['Modality = Data type'].isin(['RNA', 'RNA + protein (RNA)'])]
 df.index = [a if pd.isna(b) else a+'_'+b for a, b in zip(df[df.columns[0]], df[df.columns[1]])]
 datasets = list(df.index)
 for dataset in ['GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 'GehringPachter2019']:
     if dataset in datasets:
-        datasets.remove(dataset)  # exclude too complex study designs
-print('Selected RNA datasets:', datasets)
-# Load list of ATAC datasets available via scPerturb
-df = tab[tab['Modality = Data type'].isin(['ATAC', 'ATAC + protein'])]
-df.index = [a if pd.isna(b) else a+'_'+b for a, b in zip(df[df.columns[0]], df[df.columns[1]])]
-datasets_atac = list(df.index)
-print('Selected ATAC datasets:', datasets_atac)
+        datasets.remove(dataset)
+print(datasets)
 
 def leftsided_chebyshev_nodes(N):
 	# Takes negative chebyshev nodes of first kind, forces 0 to be included, then adds 1 to all.
@@ -50,34 +45,24 @@ def strict_equal_subsampling(adata, obs_key, N):
 
 rule all:
 	input:
-	  	# RNA Dataset preparation
-		expand(DOWNDIR / '{dataset}.h5ad', dataset=datasets),
-		expand(TEMPDIR / 'tmp_data_{dataset}.h5', dataset=datasets),
-		# RNA statistics
-		expand('tables/comparison_edistance_flavors_{dataset}_table.csv', dataset=datasets),
-		expand('tables/comparison_edistance_fixPCA_flavors_{dataset}_table.csv', dataset=datasets),
+		# expand(DOWNDIR / '{dataset}.h5ad', dataset=datasets),
+		# expand(TEMPDIR / 'tmp_data_{dataset}.h5', dataset=datasets),
 		# expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
 		# 	   mode=['etest', 'edist',
 		# 	   'earth_mover_distances', 'pseudobulk_correlations',  # TODO: PSEUDOBULK PCA distances
 		# 	   ]),
-		# expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
-		# 	   mode=['effect_of_ncounts', '500_effect_of_ncells', 'effect_of_ncells', 
-		# 	   'effect_of_nPCs', 'effect_of_nHVGs', 'effect_of_multi_vs_single_PCA'
-        #        ])
-		# expand('tables/etest_{dataset}_tables.csv', dataset=datasets),
-		# Visualizations and overviews
-		expand('figures/umap_{dataset}.pdf', dataset=datasets),
-		# ATAC analysis
-		expand(DOWNDIR / 'tmp_ATAC_data_{dataset}_feature_{feature}.h5', 
-		feature=['ChromVar', 'LSI_embedding', 'gene_scores', 'peak_bc'], 
-		dataset=datasets_atac),
-		# Simulations with multidimensional gaussians
-		'figures/edistance_vs_dimension.pdf',
-		'figures/edistance_vs_samplesize_uncorrected.pdf',
-		'figures/edistance_vs_samplesize_corrected.pdf'
+		# expand('figures/{mode}_{dataset}.pdf', dataset=datasets,
+		# 	   mode=['umap', 'pseudobulk_umap'
+		# 	   ]),
+		expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
+			   mode=['effect_of_ncounts', '500_effect_of_ncells', 'effect_of_ncells', 
+			   'effect_of_nPCs', 'effect_of_nHVGs', 'effect_of_multi_vs_single_PCA'
+               ])
 
 rule zenodo_download:
-	"Downloads all RNA datasets of scperturb from zenodo via wget."
+	"""
+	Downloads all RNA datasets of scperturb from zenodo via wget.
+  	"""
 	output: DOWNDIR / '{dataset}.h5ad'
 	resources:
 		partition='short',
@@ -93,64 +78,13 @@ rule zenodo_download:
 		wget {params.zenodo_url}/files/{wildcards.dataset}.h5ad -O {output}
 		'''
 
-rule zenodo_download_atac:
-	"Downloads all ATAC datasets of scperturb from zenodo via wget."
-	output: DOWNDIR / '{dataset}.zip'
-	resources:
-		partition='short',
-		time='4:00:00',
-		mem_mb=4000,
-		disk_mb=4000
-	params:
-		sleeptime=np.random.uniform(1,20),
-		zenodo_url=config["ZENODO_ATAC_URL"]
-	shell:
-		'''
-		sleep {params.sleeptime}
-		wget {params.zenodo_url}/files/{wildcards.dataset}.zip -O {output}
-		'''
-
-rule extract_atac:
-	"Downloads all ATAC datasets of scperturb from zenodo via wget."
-	input: DOWNDIR / '{dataset}.zip'
-	output: 
-		expand(DOWNDIR / '{{dataset}}/{feature}/{filetype}', 
-		feature=['ChromVar', 'LSI_embedding', 'gene_scores', 'markerpeak_target', 'peak_bc'],
-		filetype=['counts.mtx.gz', 'obs.csv', 'var.csv'])
-	resources:
-		partition='short',
-		time='4:00:00',
-		mem_mb=4000,
-		disk_mb=4000
-	params:
-		sleeptime=np.random.uniform(1,20),
-		zenodo_url=config["ZENODO_ATAC_URL"]
-	shell:
-		'''
-		cd {DOWNDIR}
-		unzip {wildcards.dataset}.zip
-		rm {wildcards.dataset}.zip
-		'''
-
-rule prepare_atac:
-	"Prepares scperturb ATAC datasets:"
-	input: 
-		expand(DOWNDIR / '{{dataset}}/{{feature}}/{filetype}', 
-		filetype=['counts.mtx.gz', 'obs.csv', 'var.csv'])
-	output: DOWNDIR / 'tmp_ATAC_data_{dataset}_feature_{feature}.h5'
-	resources:
-		partition='short',
-		time='0-04:00:00',
-		mem_mb=64000,
-		disk_mb=64000
-	script: 'scripts/snake_prepare_atac.py'
-
 rule prepare_data:
-	"""Prepares scperturb RNA datasets:
+	"""
+	Prepares scperturb RNA datasets:
 	- Filtering (Cells: min_counts=1000, Genes: min_cells=50)
 	- Normalization
 	- Log1p trafo
-	- Removes perturbations with less than 200 (previously 50) cells, then
+	- Removes perturbations with less than 50 cells, then
 	- Subsamples each perturbation to the smallest 
 	  number of cells such that each perturbation has at least that many cells
 	- Precomputes 2000 HVGs, PCA and KNN graph
@@ -164,40 +98,148 @@ rule prepare_data:
 		time='0-18:00:00',
 		mem_mb=64000,
 		disk_mb=64000
-	params:
-		min_counts=1000,
-		min_cells=50,
-		min_perturb_size=200,
-		n_pcs=50,
-		n_hvgs=2000
-	script: "scripts/snake_prepare_data.py"
-		
+	run:
+		import scanpy as sc
+		# project utils
+		sys.path.insert(1, '../../')
+		from utils import equal_subsampling, random_split
+
+		adata = sc.read(input[0])
+		adata.layers['counts'] = adata.X.copy()
+
+		# basic qc and pp
+		sc.pp.filter_cells(adata, min_counts=1000)
+		sc.pp.normalize_per_cell(adata)
+		sc.pp.filter_genes(adata, min_cells=50)
+		sc.pp.log1p(adata)
+		print('Shape after filtering: ', adata.shape)
+
+		# subsample against high class imbalance
+		adata = equal_subsampling(adata, 'perturbation', N_min=50)
+		sc.pp.filter_genes(adata, min_cells=3)  # sanity cleaning
+		print('Shape after equal-subsampling: ', adata.shape)
+
+		# select HVGs
+		n_var_max = 2000  # max total features to select
+		sc.pp.highly_variable_genes(adata, n_top_genes=n_var_max, subset=False, flavor='seurat_v3', layer='counts')
+		sc.pp.pca(adata, use_highly_variable=True)
+		sc.pp.neighbors(adata)
+
+		# annotate split for evaluation
+		random_split(adata)
+
+		adata.write(output[0])
+		print('Control in perturbation column:', 'control' in adata.obs.perturbation)
 	
+rule prepare_data_:
+	"""
+	Prepares scperturb RNA datasets:
+	- Filtering (Cells: min_counts=1000, Genes: min_cells=50)
+	- Normalization
+	- Log1p trafo
+	- Removes perturbations with less than 50 cells, then
+	- Subsamples each perturbation to the smallest 
+	  number of cells such that each perturbation has at least that many cells
+	- Precomputes 2000 HVGs, PCA and KNN graph
+	- Adds a convenience annotation, randomly splitting each perturbation in two groups artificially
+	  E.g. 50 EGFRi cells --> 25 EGFRi cells + 25 EGFRi_X cells.
+  	"""
+	input: DOWNDIR / '{dataset}.h5ad'
+	output: TEMPDIR / '500_tmp_data_{dataset}.h5'
+	resources:
+		partition='medium',
+		time='0-18:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	run:
+		import scanpy as sc
+		# project utils
+		sys.path.insert(1, '../../')
+		from utils import equal_subsampling, random_split
 
+		adata = sc.read(input[0])
+		adata.layers['counts'] = adata.X.copy()
 
-rule compute_estatistics:
-	"Computes E-test between each perturbation and 'control' cells."
+		# basic qc and pp
+		sc.pp.filter_cells(adata, min_counts=1000)
+		sc.pp.normalize_per_cell(adata)
+		sc.pp.filter_genes(adata, min_cells=50)
+		sc.pp.log1p(adata)
+		print('Shape after filtering: ', adata.shape)
+
+		# subsample against high class imbalance
+		adata = equal_subsampling(adata, 'perturbation', N_min=500)
+		sc.pp.filter_genes(adata, min_cells=3)  # sanity cleaning
+		print('Shape after equal-subsampling: ', adata.shape)
+
+		# select HVGs
+		n_var_max = 2000  # max total features to select
+		sc.pp.highly_variable_genes(adata, n_top_genes=n_var_max, subset=False, flavor='seurat_v3', layer='counts')
+		sc.pp.pca(adata, use_highly_variable=True)
+		sc.pp.neighbors(adata)
+
+		# annotate split for evaluation
+		random_split(adata)
+
+		adata.write(output[0])
+		print('Control in perturbation column:', 'control' in adata.obs.perturbation)
+
+rule e_testing:
+	"""
+	Computes and plots E-test between each perturbation and 'control' cells.
+  	"""
 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
-	output: 'tables/etest_{dataset}_tables.csv'
-	params: iterations=10000
+	output: 'figures/etest_{dataset}.pdf', 'tables/etest_{dataset}_tables.csv'
+	params:
+		iterations=1000
 	resources:
 		partition='medium',
 		time='1-23:00:00',
 		mem_mb=168000,
 		disk_mb=168000
-	script: "scripts/snake_compute_estatistics.py"
+	run:
+		import scanpy as sc
+		import matplotlib.pyplot as pl
+		import seaborn as sns
+		# scperturb utils
+		sys.path.insert(1, '../../package/src/')
+		from scperturb import etest
 
-rule plot_estatistics:
-	"Plots E-test between each perturbation and 'control' cells."
-	input: 'tables/etest_{dataset}_tables.csv'
-	output: 'figures/etest_{dataset}.pdf'
-	params: iterations=1000
-	resources:
-		partition='short',
-		time='0-01:00:00',
-		mem_mb=4000,
-		disk_mb=4000
-	script: "scripts/snake_plot_estatistics.py"
+		adata = sc.read(input[0])
+		df = etest(adata, runs=params.iterations)
+		df['log10_edist'] = np.log10(np.clip(df.edist, 0, np.infty))
+
+		# export table
+		df.to_csv(output[1])
+
+		# plot result
+		with sns.axes_style('whitegrid'):
+			fig, ax = pl.subplots(1,1, figsize=[6,4], dpi=100)
+		sns.scatterplot(data=df[df.index!='control'], x='log10_edist', y='pvalue_adj', hue='significant_adj', palette={True: 'tab:green', False: 'tab:red'})
+		sig = np.sum(df['significant_adj'])
+		total = len(df)-1  # (removes control)
+		ax.set_xticks([0,1,2])
+		# ax.set_xticklabels([r'$10^0$', r'$10^1$', r'$10^2$'])
+		ax.set_xticklabels([1, 10, 100])
+		ax.set_title(f'E-tests for {wildcards.dataset}\n{sig}/{total} are significant (pv<0.05)')
+		ax.set_ylabel('Adjusted p-value')
+		ax.set_xlabel('E-distance to unperturbed')
+		ax.legend(title='Significant')
+		ax.axhline(0.05, c='r', linestyle='--')
+		small = df[(df['significant_adj']) & (df.index!='control')].sort_values('edist').iloc[0]
+		big = df[(~df['significant_adj']) & (df.index!='control')].sort_values('edist').iloc[-1]
+		ax.annotate(f'E-distance\n{np.round(small.edist,2)}', xy=(small.log10_edist, small.pvalue_adj),  xycoords='data',
+		            xytext=(0.5, small.pvalue_adj), textcoords='data', fontsize=10,
+		            arrowprops=dict(facecolor='black', shrink=0.05),
+		            horizontalalignment='right', verticalalignment='center',
+		            )
+		ax.annotate(f'E-distance\n{np.round(big.edist,2)}', xy=(big.log10_edist, big.pvalue_adj),  xycoords='data',
+		            xytext=(2, big.pvalue_adj+0.2), textcoords='data', fontsize=10,
+		            arrowprops=dict(facecolor='black', shrink=0.05),
+		            horizontalalignment='right', verticalalignment='center',
+		            )
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		pl.close()
 
 rule move_some_earth:
 	"""
@@ -273,8 +315,10 @@ rule e_distance:
 		pl.savefig(output[0], bbox_inches='tight', dpi=120)
 		pl.close()
 
-rule plot_umap:
-	"Plots a umap of cells with perturbations as colors."
+rule umap:
+	"""
+	Plots a umap of cells with perturbations as colors.
+  	"""
 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'figures/umap_{dataset}.pdf'
 	resources:
@@ -282,7 +326,46 @@ rule plot_umap:
 		time='4:00:00',
 		mem_mb=168000,
 		disk_mb=168000
-	script: "scripts/snake_plot_umap.py"
+	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
+		adata = sc.read(input[0])
+		sc.tl.umap(adata)
+		scv.pl.scatter(adata, color='perturbation', show=False, dpi=120, legend_loc='right margin')
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		pl.close()
+
+rule pseudobulk_umap:
+	"""
+	Plots a umap where each point is the pseudobulk of one perturbation.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'figures/pseudobulk_umap_{dataset}.pdf'
+	resources:
+		partition='short',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
+		# project utils
+		sys.path.insert(1, '../../')
+		from utils import pseudo_bulk
+
+		adata = sc.read(input[0])
+		bdata = pseudo_bulk(adata, ['perturbation'])
+		sc.pp.normalize_per_cell(bdata)
+		sc.pp.log1p(bdata)
+		sc.pp.pca(bdata)
+		sc.pp.neighbors(bdata)
+		sc.tl.umap(bdata)
+		bdata.obs['perturbation'] = bdata.obs['perturbation'].astype('category')
+		scv.pl.scatter(bdata, color='perturbation', show=False, dpi=120, legend_loc='right margin')
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		pl.close()
 
 rule pseudobulk_correlations:
 	"""
@@ -319,7 +402,8 @@ rule pseudobulk_correlations:
 		pl.close()
 
 rule effect_of_multi_vs_single_PCA:
-	"""Computes the E-distance between control and each perturbations 
+	"""
+	Computes the E-distance between control and each perturbations 
 	1) using a PCA computed on all perturbations jointly
 	2) re-computing PCA for each control-perturbation combi.
 	Reasoning: PCA might be biased to represent highly abundant perturbations primarily.
@@ -821,50 +905,3 @@ rule effect_of_both:
 
 		# export results
 		sdf.to_csv(output[0])
-
-rule compare_edistance_flavors:
-	"Test bias of edistance versions w.r.t. cell counts"
-	input: DOWNDIR / '{dataset}.h5ad'
-	output: 
-		'tables/comparison_edistance_flavors_{dataset}_table.csv',
-		'figures/comparison_edistance_flavors_{dataset}.png'
-	resources:
-		partition='medium',
-		time='5-24:00:00',
-		mem_mb=64000,
-		disk_mb=64000
-	params:
-		N_max = 1000,  # highest number of cells to subsample to
-		N_eval_points = 10,  # number of points to evaluate edistance at
-		N_resample = 50  # number of times to resample at each point
-	script: 'scripts/snake_compare_edistance_flavors.py'
-
-rule compare_edistance_flavors_fixPCA:
-	"Test bias of edistance versions w.r.t. cell counts"
-	input: DOWNDIR / '{dataset}.h5ad'
-	output: 
-		'tables/comparison_edistance_fixPCA_flavors_{dataset}_table.csv',
-		'figures/comparison_edistance_fixPCA_flavors_{dataset}.png'
-	resources:
-		partition='medium',
-		time='5-24:00:00',
-		mem_mb=64000,
-		disk_mb=64000
-	params:
-		N_max = 1000,  # highest number of cells to subsample to
-		N_eval_points = 10,  # number of points to evaluate edistance at
-		N_resample = 50  # number of times to resample at each point
-	script: 'scripts/snake_compare_edistance_flavors_fixPCA.py'
-
-rule two_multidim_gaussians:
-	"Simulations using two multidimensional Gaussians"
-	output: 
-		'figures/edistance_vs_dimension.pdf',
-		'figures/edistance_vs_samplesize_uncorrected.pdf',
-		'figures/edistance_vs_samplesize_corrected.pdf'
-	resources:
-		partition='short',
-		time='0-00:30:00',
-		mem_mb=64000,
-		disk_mb=64000
-	script: 'scripts/snake_two_multidim_gaussians.py'

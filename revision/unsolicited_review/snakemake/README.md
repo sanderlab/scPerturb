@@ -1,0 +1,3 @@
+- Snakefile: Snakemake file to compute all distances between groups of cells (like EMD, E-distance, ...).
+- Snakefile_ndeep: Downsamples to the number of cells used by Tessa's Autoencoders.
+- Snakefile_split: Splits populations (50% of cells in each perturbations will get a label "{perturbation}_X", artificially splitting the cells in 2 groups that should theoretically be almost identical) and runs distances between them. 
