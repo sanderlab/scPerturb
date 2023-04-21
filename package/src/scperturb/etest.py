@@ -5,15 +5,14 @@ import scanpy as sc
 from tqdm import tqdm
 from statsmodels.stats.multitest import multipletests
 from sklearn.metrics import pairwise_distances
+from joblib import Parallel, delayed
 from .edistance import edist
 
 # TODO make etest allow for multiple controls (accept list of controls)
-# TODO make etest allow to use correction factor (divide by N-1 instead of N)
 
 def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
-          control='control', alpha=0.05, runs=1000, 
-          correction_method='holm-sidak', correction_factor=False, 
-          verbose=True):
+          control='control', alpha=0.05, runs=1000, flavor=1, n_jobs=1,
+          correction_method='holm-sidak', verbose=True):
     """Performs Monte Carlo permutation test with E-distance as test statistic.
     Tests for each group of cells defined in adata.obs[obs_key] if it is significantly
     different from control based on the E-distance in adata.obsm[obsm_key] space.
@@ -39,8 +38,6 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
         We do not recommend going lower than `100` and suggest between `100` and `10000` iterations.
     correction_method: `None` or any valid method for statsmodels.stats.multitest.multipletests (default: `'holm-sidak'`)
         Method used for multiple-testing correction, since we are testing each group in `adata.obs[obs_key]`.
-    correction_factor: `bool` (default: `False`)
-        Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -69,32 +66,37 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
     # Approximate sampling from null distribution (equal distributions)
     res = []
     fct = tqdm if verbose else lambda x: x
-    for i in fct(range(runs)):
+    M = np.sum(adata.obs[obs_key]==control)
+    def one_step():
         # per perturbation, shuffle with control and compute e-distance
         df = pd.DataFrame(index=groups, columns=['edist'], dtype=float)
         for group in groups:
             if group==control:
                 df.loc[group] = [0]
                 continue
+            N = np.sum(adata.obs[obs_key]==group)
             # shuffle the labels
             labels = adata.obs[obs_key].values[adata.obs[obs_key].isin([group, control])]
             shuffled_labels = np.random.permutation(labels)
-            
+
             # use precomputed pairwise distances
             sc_pwd = pwds[group]  # precomputed pairwise distances between single cells
             idx = shuffled_labels==group
-            
+
             # Note that this is wrong: sc_pwd[idx, ~idx] but this is correct: sc_pwd[idx, :][:, ~idx]
             # The first produces a vector, the second a matrix (we need the matrix)
-            delta = np.mean(sc_pwd[idx, :][:, ~idx])
-            sigma = np.mean(sc_pwd[idx, :][:, idx])
-            sigma_c = np.mean(sc_pwd[~idx, :][:, ~idx])
-            
+            factor = N / (N-1) if flavor==1 else 1
+            factor_c = M / (M-1) if flavor==1 else 1
+            delta = np.sum(sc_pwd[idx, :][:, ~idx]) / (N * M)
+            sigma = np.sum(sc_pwd[idx, :][:, idx]) / (N * N) * factor
+            sigma_c = np.sum(sc_pwd[~idx, :][:, ~idx]) / (M * M) * factor_c
+
             edistance = 2 * delta - sigma - sigma_c
 
             df.loc[group] = edistance
-        res.append(df.sort_index())
-
+        return df.sort_index()
+    res = Parallel(n_jobs=n_jobs)(delayed(one_step)() for i in fct(range(runs)))
+    
     # "Sampling" from original distribution without shuffling (hypothesis)
     df_old = edist(adata, obs_key, obsm_key=obsm_key, dist=dist, verbose=False).loc[control]
     df_old.columns = ['edist']
@@ -105,6 +107,7 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
         if group==control:
             original.append(0)
             continue
+        N = np.sum(adata.obs[obs_key]==group)
         # shuffle the labels
         labels = adata.obs[obs_key].values[adata.obs[obs_key].isin([group, control])]
         
@@ -114,9 +117,11 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
         
         # Note that this is wrong: sc_pwd[idx, ~idx] but this is correct: sc_pwd[idx, :][:, ~idx]
         # The first produces a vector, the second a matrix (we need the matrix)
-        delta = np.mean(sc_pwd[idx, :][:, ~idx])
-        sigma = np.mean(sc_pwd[idx, :][:, idx])
-        sigma_c = np.mean(sc_pwd[~idx, :][:, ~idx])
+        factor = N / (N-1) if flavor==1 else 1
+        factor_c = M / (M-1) if flavor==1 else 1
+        delta = np.mean(sc_pwd[idx, :][:, ~idx]) / (N * M)
+        sigma = np.mean(sc_pwd[idx, :][:, idx]) / (N * N) * factor
+        sigma_c = np.mean(sc_pwd[~idx, :][:, ~idx]) / (M * M) * factor
         
         edistance = 2 * delta - sigma - sigma_c
         original.append(edistance)
