@@ -16,6 +16,8 @@ if len(adata.obs.perturbation.unique()) > 20:
     sc.pp.neighbors(adata)
     adata.obs['perturbation'] = adata.obs['perturbation'].astype('category')
     title = snakemake.wildcards.dataset+' pseudobulk umap'
+else:
+    sc.pp.neighbors(adata)
 sc.tl.umap(adata)
 scv.pl.scatter(adata, color='perturbation', show=False, dpi=120, legend_loc='right margin')
 pl.savefig(snakemake.output[0], bbox_inches='tight', dpi=120)

@@ -3,7 +3,7 @@ Author: Stefan Peidli
 Aim: Snakemake workflow for scperturb analysis.
 Date: 15.12.2022
 Run: snakemake
-Run (dev): snakemake --profile=cubi-dev --jobs 100 -k --use-conda --restart-times 0 --rerun-triggers mtime
+Run (dev): snakemake --profile=cubi-dev --jobs 100 -k --use-conda --restart-times 0 --rerun-triggers mtime --cores 16
 DAG: snakemake --forceall --dag | dot -Tpdf > snake_dag.pdf
 Rulegraph: snakemake --forceall --rulegraph | dot -Tpdf > snake_rulegraph.pdf
 """
@@ -24,15 +24,31 @@ tab = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx')  # supplementa
 df = tab[tab['Modality = Data type'].isin(['RNA', 'RNA + protein (RNA)'])]
 df.index = [a if pd.isna(b) else a+'_'+b for a, b in zip(df[df.columns[0]], df[df.columns[1]])]
 datasets = list(df.index)
-for dataset in ['GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 'GehringPachter2019']:
-    if dataset in datasets:
-        datasets.remove(dataset)  # exclude too complex study designs
+remove_these = [
+	# complex study designs
+	'GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'GehringPachter2019',
+	# check this one
+	'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 
+	# too few perturbations
+	'SchiebingerLander2019_GSE106340', 'SchiebingerLander2019_GSE115943',
+	# too few cells/perturbations after filtering
+	'DatlingerBock2017', 'XieHon2017', 'GasperiniShendure2019_lowMOI', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_11_screen',
+	# control not well defined
+	'AdamsonWeissman2016_GSM2406675_10X001', 'AdamsonWeissman2016_GSM2406677_10X005', 
+	'AdamsonWeissman2016_GSM2406681_10X010', 'WeinrebKlein2020', 'TianKampmann2019_iPSC'
+	]
+for dataset in np.intersect1d(remove_these, datasets):
+    datasets.remove(dataset)
 print('Selected RNA datasets:', datasets)
 # Load list of ATAC datasets available via scPerturb
 df = tab[tab['Modality = Data type'].isin(['ATAC', 'ATAC + protein'])]
 df.index = [a if pd.isna(b) else a+'_'+b for a, b in zip(df[df.columns[0]], df[df.columns[1]])]
 datasets_atac = list(df.index)
 print('Selected ATAC datasets:', datasets_atac)
+
+# datasets for benchmark analysis
+datasets_selection = ['PapalexiSatija2021_eccite_RNA', 'NormanWeissman2019_filtered', 
+'DatlingerBock2021', 'ZhaoSims2021', 'SrivatsanTrapnell2020_sciplex3']
 
 def leftsided_chebyshev_nodes(N):
 	# Takes negative chebyshev nodes of first kind, forces 0 to be included, then adds 1 to all.
@@ -53,28 +69,33 @@ rule all:
 	  	# RNA Dataset preparation
 		expand(DOWNDIR / '{dataset}.h5ad', dataset=datasets),
 		expand(TEMPDIR / 'tmp_data_{dataset}.h5', dataset=datasets),
-		# RNA statistics
-		expand('tables/comparison_edistance_flavors_{dataset}_table.csv', dataset=datasets),
-		expand('tables/comparison_edistance_fixPCA_flavors_{dataset}_table.csv', dataset=datasets),
-		# expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
-		# 	   mode=['etest', 'edist',
-		# 	   'earth_mover_distances', 'pseudobulk_correlations',  # TODO: PSEUDOBULK PCA distances
-		# 	   ]),
+		# E-stats (E-test and E-dist w.r.t. control and pairwise E-dists)
+		expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
+			   mode=['etest', 'edist_to_control']),
+		expand('tables/pairwise_edist_{dataset}_tables.csv', 
+			   dataset=[x for x in datasets if 'Replogle' not in x]),
+		# Exploring E-stats properties
+		# expand('tables/comparison_edistance_flavors_{dataset}_table.csv', dataset=datasets_selection),
+		# expand('tables/comparison_edistance_fixPCA_flavors_{dataset}_table.csv', dataset=datasets_selection),
+		# expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets_selection,
+		# 	   mode=['estats_feature_selection']),
 		# expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
 		# 	   mode=['effect_of_ncounts', '500_effect_of_ncells', 'effect_of_ncells', 
 		# 	   'effect_of_nPCs', 'effect_of_nHVGs', 'effect_of_multi_vs_single_PCA'
         #        ])
-		# expand('tables/etest_{dataset}_tables.csv', dataset=datasets),
 		# Visualizations and overviews
-		expand('figures/umap_{dataset}.pdf', dataset=datasets),
+		expand('figures/umap_{dataset}.pdf', dataset=datasets_selection),
 		# ATAC analysis
-		expand(DOWNDIR / 'tmp_ATAC_data_{dataset}_feature_{feature}.h5', 
+		expand(TEMPDIR / 'tmp_ATAC_data_{dataset}_feature_{feature}.h5', 
 		feature=['ChromVar', 'LSI_embedding', 'gene_scores', 'peak_bc'], 
 		dataset=datasets_atac),
 		# Simulations with multidimensional gaussians
 		'figures/edistance_vs_dimension.pdf',
 		'figures/edistance_vs_samplesize_uncorrected.pdf',
-		'figures/edistance_vs_samplesize_corrected.pdf'
+		'figures/edistance_vs_samplesize_corrected.pdf',
+		# Profiling of memory and CPU
+		'tables/memory_profile_PapalexiSatija2021_eccite_RNA.log',
+		'tables/cpu_profile_PapalexiSatija2021_eccite_RNA.prof'
 
 rule zenodo_download:
 	"Downloads all RNA datasets of scperturb from zenodo via wget."
@@ -137,7 +158,7 @@ rule prepare_atac:
 	input: 
 		expand(DOWNDIR / '{{dataset}}/{{feature}}/{filetype}', 
 		filetype=['counts.mtx.gz', 'obs.csv', 'var.csv'])
-	output: DOWNDIR / 'tmp_ATAC_data_{dataset}_feature_{feature}.h5'
+	output: TEMPDIR / 'tmp_ATAC_data_{dataset}_feature_{feature}.h5'
 	resources:
 		partition='short',
 		time='0-04:00:00',
@@ -150,26 +171,26 @@ rule prepare_data:
 	- Filtering (Cells: min_counts=1000, Genes: min_cells=50)
 	- Normalization
 	- Log1p trafo
-	- Removes perturbations with less than 200 (previously 50) cells, then
+	- Removes perturbations with less than 200 cells, then
 	- Subsamples each perturbation to the smallest 
 	  number of cells such that each perturbation has at least that many cells
-	- Precomputes 2000 HVGs, PCA and KNN graph
+	- Precomputes 2000 HVGs, PCA
 	- Adds a convenience annotation, randomly splitting each perturbation in two groups artificially
 	  E.g. 50 EGFRi cells --> 25 EGFRi cells + 25 EGFRi_X cells.
   	"""
 	input: DOWNDIR / '{dataset}.h5ad'
 	output: TEMPDIR / 'tmp_data_{dataset}.h5'
 	resources:
-		partition='medium',
+		partition=lambda wildcards: 'highmem' if 'Replogle' in wildcards.dataset else 'medium',
 		time='0-18:00:00',
-		mem_mb=64000,
-		disk_mb=64000
+		mem_mb=lambda wildcards: 250000 if 'Replogle' in wildcards.dataset else 64000,
+		disk_mb=lambda wildcards: 250000 if 'Replogle' in wildcards.dataset else 64000
 	params:
-		min_counts=1000,
-		min_cells=50,
-		min_perturb_size=200,
-		n_pcs=50,
-		n_hvgs=2000
+		min_counts=1000,  # for cell filtering
+		min_cells=50,  # for gene filtering
+		min_perturb_size=200,  # exclude perturbations with less cells
+		n_pcs=50,  # number of PCs to compute and use
+		n_hvgs=2000  # number of HVGs for PCA
 	script: "scripts/snake_prepare_data.py"
 		
 	
@@ -180,9 +201,10 @@ rule compute_estatistics:
 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
 	output: 'tables/etest_{dataset}_tables.csv'
 	params: iterations=10000
+	threads: 64
 	resources:
 		partition='medium',
-		time='1-23:00:00',
+		time='2-23:00:00',
 		mem_mb=168000,
 		disk_mb=168000
 	script: "scripts/snake_compute_estatistics.py"
@@ -241,37 +263,31 @@ rule move_some_earth:
 				df.loc[p2, p1] = cost
 		df.to_csv(output[0])
 
-rule e_distance:
+rule compute_pairwise_edistance:
 	"""
 	Computes and plots the E-distance between all perturbation pairs.
   	"""
 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
-	output: 'figures/edist_{dataset}.pdf', 'tables/edist_{dataset}_tables.csv'
+	output: 'figures/pairwise_edist_{dataset}.pdf', 'tables/pairwise_edist_{dataset}_tables.csv'
+	resources:
+		partition='medium',
+		time='16:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	script: 'scripts/snake_compute_pairwise_edistance.py'
+
+rule compute_edistance_to_control:
+	"""
+	Computes the E-distance of all perturbations to control cells.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/edist_to_control_{dataset}_tables.csv'
 	resources:
 		partition='short',
 		time='4:00:00',
 		mem_mb=168000,
 		disk_mb=168000
-	run:
-		import scanpy as sc
-		import matplotlib.pyplot as pl
-		# scperturb utils
-		sys.path.insert(1, '../../package/src/')
-		from scperturb import edist
-		# project utils
-		sys.path.insert(1, '../../')
-		from utils import cluster_matrix, plot_heatmap
-
-		adata = sc.read(input[0])
-		tab = edist(adata, 'perturbation', obsm_key='X_pca')
-		tab.to_csv(output[1])
-
-		# plot
-		tab = (1/tab).replace([np.inf, -np.inf], 0, inplace=False)
-		tab = cluster_matrix(tab, 'both')
-		plot_heatmap(tab, wildcards.dataset+' edistances')
-		pl.savefig(output[0], bbox_inches='tight', dpi=120)
-		pl.close()
+	script: 'scripts/snake_compute_edistance_to_control.py'
 
 rule plot_umap:
 	"Plots a umap of cells with perturbations as colors."
@@ -451,12 +467,15 @@ rule effect_of_nPCs:
 				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
 		sdf.to_csv(output[0])
 
-rule effect_of_nHVGs:
+rule estats_feature_selection:
 	"""
-	Computes the E-distance and E-test for each perturbation to control at different number of PCs.
+	Computes the E-distance and E-test for each perturbation to control at 
+	different methods of feature selection for PCA.
   	"""
 	input: TEMPDIR / 'tmp_data_{dataset}.h5'
-	output: 'tables/effect_of_nHVGs_{dataset}_tables.csv'
+	output: 
+		'tables/estats_feature_selection_{dataset}_tables.csv',
+		'figures/estats_feature_selection_{dataset}.pdf'
 	resources:
 		partition='medium',
 		time='2-23:00:00',
@@ -464,62 +483,7 @@ rule effect_of_nHVGs:
 		disk_mb=64000
 	params:
 		iterations=10
-	run:
-		import scanpy as sc
-		import scvelo as scv
-		import matplotlib.pyplot as pl
-		# scperturb utils
-		sys.path.insert(1, '../../package/src/')
-		from scperturb import edist, onesided_pca_distances, etest, self_pca_distances
-
-		adata = sc.read(input[0])
-		adata.X = adata.layers['counts'].copy()  # reset to raw counts
-		control = 'control'
-		groupby = 'perturbation'
-
-		sigs = {}
-		deltas = {}
-		tests = {}
-
-		# Define sample points ("nodes")
-		ns_ = leftsided_chebyshev_nodes(params.iterations)
-		ns_ = np.array(ns_ * 4000, dtype=int)
-		ns_ = np.unique(ns_)
-		ns = ns_[ns_>0]
-		n_max = np.max(ns)
-
-		for n in ns:
-			tdata = adata.copy()
-			sc.pp.normalize_per_cell(tdata)
-			sc.pp.log1p(tdata)
-			try:
-				sc.pp.highly_variable_genes(tdata, n_top_genes=int(n), flavor='seurat_v3', layer='counts')
-			except:
-				print('Failed to compute HVGs for n=', n)
-				continue
-			sc.pp.pca(tdata, use_highly_variable=True)
-        	
-			# STATS
-			deltas[n] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)
-			sigs[n] = self_pca_distances(tdata, groupby, verbose=False)
-			# E-test
-			tests[n] = etest(tdata, groupby, control='control', runs=100)
-
-		sdf = pd.concat([
-			pd.concat(tests),
-			pd.concat(deltas),
-			pd.concat(sigs)
-		], axis=1).reset_index()
-		sdf.columns = ['n', groupby, 'edist', 'pvalue', 'significant', 'pvalue_adj', 'significant_adj', 'delta', 'sigma']
-		sdf['significant_adj'][sdf[groupby]==control]='control'
-		# annotate newly insignificant
-		sdf['significant_adj_new'] = sdf['significant_adj']
-		for g in sdf.perturbation.unique():
-			if sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==n_max)].iloc[0]==True:
-				sdf['significant_adj_new'][(sdf[groupby]==g) & (sdf['significant_adj']==False)] = 'False (lost)'
-			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==n_max)].iloc[0]==False:
-				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
-		sdf.to_csv(output[0])
+	script: 'scripts/snake_estats_feature_selection.py'
 
 rule effect_of_ncells:
 	"""
@@ -868,3 +832,23 @@ rule two_multidim_gaussians:
 		mem_mb=64000,
 		disk_mb=64000
 	script: 'scripts/snake_two_multidim_gaussians.py'
+
+rule mprofile:
+	"Profile memory usage of edistance calculation"
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/memory_profile_{dataset}.log'
+	shell:
+		"""
+		python -m memory_profiler \
+		scripts/snake_mprofile.py -i {input} -o {output}
+		"""
+
+rule cprofile:
+	"Profile CPU usage of edistance calculation"
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/cpu_profile_{dataset}.prof'
+	shell:
+		"""
+		python -m cProfile -o {output} -s time \
+		scripts/snake_cprofile.py -i {input} -o {output}
+		"""
