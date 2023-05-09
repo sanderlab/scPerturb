@@ -83,6 +83,14 @@ rule all:
 		# 	   mode=['effect_of_ncounts', '500_effect_of_ncells', 'effect_of_ncells', 
 		# 	   'effect_of_nPCs', 'effect_of_nHVGs', 'effect_of_multi_vs_single_PCA'
         #        ])
+		expand('tables/estats_feature_selection_{dataset}_tables.csv', dataset=datasets_selection),
+		expand(TEMPDIR / 'sweep/etest_{dataset}_{ncounts}_{ncells}_{npcs}_{nhvgs}_tables.csv', 
+			   ncounts = [1000, 5000, 7500, 10000],
+			   ncells = [100, 200, 500, 1000, 1200],
+			   npcs = [10, 50, 100],
+			   nhvgs = [500, 2000, 4000],
+			   dataset = ['NormanWeissman2019_filtered', 'ZhaoSims2021']
+		),
 		# Visualizations and overviews
 		expand('figures/umap_{dataset}.pdf', dataset=datasets_selection),
 		# ATAC analysis
@@ -94,7 +102,7 @@ rule all:
 		'figures/edistance_vs_samplesize_uncorrected.pdf',
 		'figures/edistance_vs_samplesize_corrected.pdf',
 		# Profiling of memory and CPU
-		'tables/memory_profile_PapalexiSatija2021_eccite_RNA.log',
+		# 'tables/memory_profile_PapalexiSatija2021_eccite_RNA.log',
 		'tables/cpu_profile_PapalexiSatija2021_eccite_RNA.prof'
 
 rule zenodo_download:
@@ -203,10 +211,10 @@ rule compute_estatistics:
 	params: iterations=10000
 	threads: 64
 	resources:
-		partition='medium',
-		time='2-23:00:00',
-		mem_mb=168000,
-		disk_mb=168000
+		partition=lambda wildcards: 'highmem' if 'Replogle' in wildcards.dataset else 'medium',
+		time='0-23:00:00',
+		mem_mb=lambda wildcards: 250000 if 'Replogle' in wildcards.dataset else 64000,
+		disk_mb=lambda wildcards: 250000 if 'Replogle' in wildcards.dataset else 64000
 	script: "scripts/snake_compute_estatistics.py"
 
 rule plot_estatistics:
@@ -852,3 +860,16 @@ rule cprofile:
 		python -m cProfile -o {output} -s time \
 		scripts/snake_cprofile.py -i {input} -o {output}
 		"""
+
+rule sweep_scperturb:
+	"A single evaluation for the grid search."
+	input: DOWNDIR / '{dataset}.h5ad'
+	output: TEMPDIR / 'sweep/etest_{dataset}_{ncounts}_{ncells}_{npcs}_{nhvgs}_tables.csv'
+	params: iterations=10000
+	threads: 64
+	resources:
+		partition='short',
+		time='4:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	script: "scripts/snake_sweep_scperturb.py"

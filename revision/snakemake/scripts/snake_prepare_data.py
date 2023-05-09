@@ -21,7 +21,6 @@ print('Shape after filtering: ', adata.shape)
 
 # select HVGs
 print('Selecting highly variable genes...')
-n_var_max = 2000  # max total features to select
 sc.pp.highly_variable_genes(adata, n_top_genes=snakemake.params.n_hvgs,
                             subset=False, flavor='seurat_v3', layer='counts')
 print('Running PCA...')

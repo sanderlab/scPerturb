@@ -11,7 +11,7 @@ sys.path.insert(1, '../../')
 from utils import cluster_matrix, plot_heatmap
 
 adata = sc.read(snakemake.input[0])
-tab = edist(adata, 'perturbation', obsm_key='X_pca', flavor=1)
+tab = edist(adata, 'perturbation', obsm_key='X_pca')
 tab.to_csv(snakemake.output[1])
 
 # plot
