@@ -1,0 +1,61 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library('powsimR')
+```
+```{r}
+data("CELseq2_Gene_UMI_Counts")
+batch <- sapply(strsplit(colnames(CELseq2_Gene_UMI_Counts), "_"), "[[", 1)
+Batches <- data.frame(Batch = batch,
+                      stringsAsFactors = FALSE, 
+                      row.names = colnames(CELseq2_Gene_UMI_Counts))
+data("GeneLengths_mm10")
+
+# estimation
+estparam_gene <- estimateParam(countData = CELseq2_Gene_UMI_Counts,
+                          readData = NULL,
+                          batchData = Batches,
+                          spikeData = NULL,
+                          spikeInfo = NULL,
+                          Lengths = GeneLengths, MeanFragLengths = NULL,
+                          RNAseq = 'singlecell', Protocol = 'UMI',
+                          Distribution = 'NB', Normalisation = "scran",
+                          GeneFilter = 0.1, SampleFilter = 3,
+                          sigma = 1.96, NCores = NULL, verbose = TRUE)
+
+# plotting
+plotParam(estParamRes = estparam_gene, Annot = T)
+```
+
+
+```{r}
+for (p.DE in c(0.01, 0.05, 0.2, 0.5)){
+for (pLFC in c(0.1, 0.5, 1, 2)){
+  # set up simulations
+  setupres <- Setup(ngenes = 10000, 
+                    nsims = 1,
+                    p.DE = p.DE, # proportion of genes that will be DE
+                    pLFC = pLFC,  # defines log fold changes
+                    p.G = 2/3,  # proportion of cells with phenotypic fold change
+                    n1 = c(200), n2 = c(200),  # number of cells in groups
+                    estParamRes = estparam_gene,
+                    DropGenes = TRUE,  # randomly dropout some genes
+                    setup.seed = 42, verbose = TRUE)
+  
+  simres <- simulateDE(SetupRes = setupres,
+                       Prefilter = NULL, Imputation = NULL,
+                       Normalisation = 'scran',
+                       DEmethod = "limma-trend", DEFilter = FALSE,
+                       Counts = TRUE,  # give counts as output!
+                       NCores = NULL, verbose = TRUE)
+  name = paste(p.DE, pLFC, 'data.csv', sep='_')
+  write.table(simres$Counts$'200vs200'[1], name, sep=",")
+}}
+
+```
+
+
+
