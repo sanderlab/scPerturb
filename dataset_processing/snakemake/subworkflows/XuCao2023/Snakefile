@@ -1,0 +1,40 @@
+"""
+Author: Stefan Peidli
+Date: 04.10.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+### RULES ###
+rule XuCao2023_download:
+    output: TEMPDIR / 'XuCao2023/downloaded.flag'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        cd {TEMPDIR}/XuCao2023
+        wget -O GSE218566_RAW.tar 'http://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE218566&format=file'
+        tar -xvf GSE218566_RAW.tar
+        rm GSE218566_RAW.tar
+        gunzip *.gz
+        touch {output}
+        """
+
+rule XuCao2023:
+    input: TEMPDIR / 'XuCao2023/downloaded.flag'
+    output: TEMPDIR / 'XuCao2023/XuCao2023.h5ad'
+    resources:
+        partititon='short',
+        time='01:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    script: 'XuCao2023.py'
