@@ -3,13 +3,12 @@ Author: Stefan Peidli
 Aim: Snakemake workflow for downloading and processing scperturb data.
 Date: 07.01.2023
 Run: snakemake
-Run (dev): snakemake --profile=cubi-v1 --jobs 100 -k --use-conda --restart-times 0 --rerun-triggers mtime
 Create DAG: snakemake --forceall --dag | dot -Tpdf > snake_dag.pdf
 Create Rulegraph: snakemake --forceall --rulegraph | dot -Tpdf > snake_rulegraph.pdf
 """
 
 from pathlib import Path
-configfile: "../config.yaml"
+configfile: "../../configuration/config.yaml"
 
 ### PATHS ###
 DATADIR = Path(config['DOWNDIR'])  # place to store data
@@ -29,7 +28,7 @@ rule all:
         rules.JoungZhang2023.input,
         rules.YaoCleary2023.output,
         rules.QinTape2023.output,
-        rules.WuBassett2023.output,
+        #rules.WuBassett2023.output,
         # WIP
         rules.McFalineTrapnell2023_download.output,
         

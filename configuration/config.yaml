@@ -1,0 +1,8 @@
+DOWNDIR: "/scratch/peidli/scPerturb/"  # Directory where you downloaded the data from scperturb.org
+DIR: "/scratch/peidli/scPerturb/"  # Directory where many terabytes of data can be dumped
+WDIR: "/home/peidli/data/scPerturb/"  # Directory where raw supplement and processed data is exported to
+CDIR: "/home/peidli/projects/scPerturb/"  # Directory where you cloned this repo to.
+table: "../../metadata/publicly_available_singlecell_perturbation_datasets_180822.xlsx"  # current table to use
+TEMPDIR: "/scratch/peidli/scPerturb/"
+ZENODO_RNA_URL: 'https://zenodo.org/record/7278143/'  # V1.1, RNA
+ZENODO_ATAC_URL: 'https://zenodo.org/record/7058382' # V1.0 ATAC

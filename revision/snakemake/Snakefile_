@@ -1,0 +1,873 @@
+"""
+Author: Stefan Peidli
+Aim: Snakemake workflow for scperturb analysis.
+Date: 15.12.2022
+Run: snakemake
+Run (dev): snakemake --profile=cubi-dev --jobs 100 -k --use-conda --restart-times 0 --rerun-triggers mtime --cores 16
+DAG: snakemake --forceall --dag | dot -Tpdf > snake_dag.pdf
+Rulegraph: snakemake --forceall --rulegraph | dot -Tpdf > snake_rulegraph.pdf
+"""
+
+import pandas as pd
+import numpy as np
+import sys
+import yaml
+from pathlib import Path
+
+# Load configs
+configfile: "../../configuration/config.yaml"
+TEMPDIR = Path(config["TEMPDIR"])
+DOWNDIR = Path(config["DOWNDIR"])
+
+# Load list of RNA datasets available via scPerturb
+tab = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx')  # supplemental table
+df = tab[tab['Modality = Data type'].isin(['RNA', 'RNA + protein (RNA)'])]
+df.index = [a if pd.isna(b) else a+'_'+b for a, b in zip(df[df.columns[0]], df[df.columns[1]])]
+datasets = list(df.index)
+remove_these = [
+	# complex study designs
+	'GasperiniShendure2019_highMOI', 'GasperiniShendure2019_atscale', 'GehringPachter2019',
+	# check this one
+	'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_8_screen', 
+	# too few perturbations
+	'SchiebingerLander2019_GSE106340', 'SchiebingerLander2019_GSE115943',
+	# too few cells/perturbations after filtering
+	'DatlingerBock2017', 'XieHon2017', 'GasperiniShendure2019_lowMOI', 'SchraivogelSteinmetz2020_TAP_SCREEN__chromosome_11_screen',
+	# control not well defined
+	'AdamsonWeissman2016_GSM2406675_10X001', 'AdamsonWeissman2016_GSM2406677_10X005', 
+	'AdamsonWeissman2016_GSM2406681_10X010', 'WeinrebKlein2020', 'TianKampmann2019_iPSC'
+	]
+for dataset in np.intersect1d(remove_these, datasets):
+    datasets.remove(dataset)
+print('Selected RNA datasets:', datasets)
+# Load list of ATAC datasets available via scPerturb
+df = tab[tab['Modality = Data type'].isin(['ATAC', 'ATAC + protein'])]
+df.index = [a if pd.isna(b) else a+'_'+b for a, b in zip(df[df.columns[0]], df[df.columns[1]])]
+datasets_atac = list(df.index)
+print('Selected ATAC datasets:', datasets_atac)
+
+# datasets for benchmark analysis
+datasets_selection = ['PapalexiSatija2021_eccite_RNA', 'NormanWeissman2019_filtered', 
+'DatlingerBock2021', 'ZhaoSims2021', 'SrivatsanTrapnell2020_sciplex3']
+
+def leftsided_chebyshev_nodes(N):
+	# Takes negative chebyshev nodes of first kind, forces 0 to be included, then adds 1 to all.
+	return np.polynomial.chebyshev.chebpts1(N*2+1)[:(N+1)] + 1
+
+def strict_equal_subsampling(adata, obs_key, N):
+    '''
+    Subsample to same class sizes. Classes given by obs_key pointing to categorical in adata.obs.
+    '''
+    counts = adata.obs[obs_key].value_counts()
+    # subsample indices per group defined by obs_key
+    indices = [np.random.choice(adata.obs_names[adata.obs[obs_key]==group], size=N, replace=False) for group in counts.index]
+    selection = np.hstack(np.array(indices))
+    return adata[selection].copy()
+
+rule all:
+	input:
+	  	# RNA Dataset preparation
+		expand(DOWNDIR / '{dataset}.h5ad', dataset=datasets),
+		# expand(TEMPDIR / 'tmp_data_{dataset}.h5', dataset=datasets),
+		DOWNDIR / 'all_obs.csv',
+		# # E-stats (E-test and E-dist w.r.t. control and pairwise E-dists)
+		# expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
+		# 	   mode=['etest', 'edist_to_control']),
+		# expand('tables/pairwise_edist_{dataset}_tables.csv', 
+		# 	   dataset=[x for x in datasets if 'Replogle' not in x]),
+		# # Exploring E-stats properties
+		# # expand('tables/comparison_edistance_flavors_{dataset}_table.csv', dataset=datasets_selection),
+		# # expand('tables/comparison_edistance_fixPCA_flavors_{dataset}_table.csv', dataset=datasets_selection),
+		# # expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets_selection,
+		# # 	   mode=['estats_feature_selection']),
+		# # expand('tables/{mode}_{dataset}_tables.csv', dataset=datasets,
+		# # 	   mode=['effect_of_ncounts', '500_effect_of_ncells', 'effect_of_ncells', 
+		# # 	   'effect_of_nPCs', 'effect_of_nHVGs', 'effect_of_multi_vs_single_PCA'
+        # #        ])
+		# expand('tables/estats_feature_selection_{dataset}_tables.csv', dataset=datasets_selection),
+		# expand(TEMPDIR / 'sweep/etest_{dataset}_{ncounts}_{ncells}_{npcs}_{nhvgs}_tables.csv', 
+		# 	   ncounts = [1000, 5000, 7500, 10000],
+		# 	   ncells = [100, 200, 500, 1000, 1200],
+		# 	   npcs = [10, 50, 100],
+		# 	   nhvgs = [500, 2000, 4000],
+		# 	   dataset = ['NormanWeissman2019_filtered', 'ZhaoSims2021']
+		# ),
+		# # Visualizations and overviews
+		# expand('figures/umap_{dataset}.pdf', dataset=datasets_selection),
+		# # ATAC analysis
+		# expand(TEMPDIR / 'tmp_ATAC_data_{dataset}_feature_{feature}.h5', 
+		# feature=['ChromVar', 'LSI_embedding', 'gene_scores', 'peak_bc'], 
+		# dataset=datasets_atac),
+		# # Simulations with multidimensional gaussians
+		# 'figures/edistance_vs_dimension.pdf',
+		# 'figures/edistance_vs_samplesize_uncorrected.pdf',
+		# 'figures/edistance_vs_samplesize_corrected.pdf',
+		# # Profiling of memory and CPU
+		# # 'tables/memory_profile_PapalexiSatija2021_eccite_RNA.log',
+		# 'tables/cpu_profile_PapalexiSatija2021_eccite_RNA.prof'
+
+rule merge_obs:
+	"Merge all obs.csv files into one."
+	input: expand(TEMPDIR / 'obs/{dataset}.csv', dataset=datasets)
+	output: DOWNDIR / 'all_obs.csv'
+	run:
+		import pandas as pd
+		df = pd.concat([pd.read_csv(f) for f in input])
+		df.to_csv(output[0])
+
+rule extract_obs:
+	input: DOWNDIR / '{dataset}.h5ad'
+	output: temp(TEMPDIR / 'obs/{dataset}.csv')
+	resources:
+		time='0:30:00',
+		mem_mb=64000,
+		disk_mb=64000
+	run:
+		import scanpy as sc
+		adata = sc.read(input[0])
+		adata.obs.dataset = wildcards.dataset
+		adata.obs.to_csv(output[0])
+
+rule zenodo_download:
+	"Downloads all RNA datasets of scperturb from zenodo via wget."
+	output: DOWNDIR / '{dataset}.h5ad'
+	resources:
+		time='4:00:00',
+		mem_mb=4000,
+		disk_mb=4000
+	params:
+		sleeptime=np.random.uniform(1,20),
+		zenodo_url=config["ZENODO_RNA_URL"]
+	shell:
+		'''
+		sleep {params.sleeptime}
+		wget {params.zenodo_url}/files/{wildcards.dataset}.h5ad -O {output}
+		'''
+
+rule zenodo_download_atac:
+	"Downloads all ATAC datasets of scperturb from zenodo via wget."
+	output: DOWNDIR / '{dataset}.zip'
+	resources:
+		time='4:00:00',
+		mem_mb=4000,
+		disk_mb=4000
+	params:
+		sleeptime=np.random.uniform(1,20),
+		zenodo_url=config["ZENODO_ATAC_URL"]
+	shell:
+		'''
+		sleep {params.sleeptime}
+		wget {params.zenodo_url}/files/{wildcards.dataset}.zip -O {output}
+		'''
+
+rule extract_atac:
+	"Downloads all ATAC datasets of scperturb from zenodo via wget."
+	input: DOWNDIR / '{dataset}.zip'
+	output: 
+		expand(DOWNDIR / '{{dataset}}/{feature}/{filetype}', 
+		feature=['ChromVar', 'LSI_embedding', 'gene_scores', 'markerpeak_target', 'peak_bc'],
+		filetype=['counts.mtx.gz', 'obs.csv', 'var.csv'])
+	resources:
+		time='4:00:00',
+		mem_mb=4000,
+		disk_mb=4000
+	params:
+		sleeptime=np.random.uniform(1,20),
+		zenodo_url=config["ZENODO_ATAC_URL"]
+	shell:
+		'''
+		cd {DOWNDIR}
+		unzip {wildcards.dataset}.zip
+		rm {wildcards.dataset}.zip
+		'''
+
+rule prepare_atac:
+	"Prepares scperturb ATAC datasets:"
+	input: 
+		expand(DOWNDIR / '{{dataset}}/{{feature}}/{filetype}', 
+		filetype=['counts.mtx.gz', 'obs.csv', 'var.csv'])
+	output: TEMPDIR / 'tmp_ATAC_data_{dataset}_feature_{feature}.h5'
+	resources:
+		time='0-04:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	script: 'scripts/snake_prepare_atac.py'
+
+rule prepare_data:
+	"""Prepares scperturb RNA datasets:
+	- Filtering (Cells: min_counts=1000, Genes: min_cells=50)
+	- Normalization
+	- Log1p trafo
+	- Removes perturbations with less than 200 cells, then
+	- Subsamples each perturbation to the smallest 
+	  number of cells such that each perturbation has at least that many cells
+	- Precomputes 2000 HVGs, PCA
+	- Adds a convenience annotation, randomly splitting each perturbation in two groups artificially
+	  E.g. 50 EGFRi cells --> 25 EGFRi cells + 25 EGFRi_X cells.
+  	"""
+	input: DOWNDIR / '{dataset}.h5ad'
+	output: TEMPDIR / 'tmp_data_{dataset}.h5'
+	resources:
+		time='0-18:00:00',
+		mem_mb=lambda wildcards: 250000 if 'Replogle' in wildcards.dataset else 64000,
+		disk_mb=lambda wildcards: 250000 if 'Replogle' in wildcards.dataset else 64000
+	params:
+		min_counts=1000,  # for cell filtering
+		min_cells=50,  # for gene filtering
+		min_perturb_size=200,  # exclude perturbations with less cells
+		n_pcs=50,  # number of PCs to compute and use
+		n_hvgs=2000  # number of HVGs for PCA
+	script: "scripts/snake_prepare_data.py"
+		
+
+rule compute_estatistics:
+	"Computes E-test between each perturbation and 'control' cells."
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/etest_{dataset}_tables.csv'
+	params: iterations=10000
+	threads: 64
+	resources:
+		time='0-23:00:00',
+		mem_mb=lambda wildcards: 250000 if 'Replogle' in wildcards.dataset else 64000,
+		disk_mb=lambda wildcards: 250000 if 'Replogle' in wildcards.dataset else 64000
+	script: "scripts/snake_compute_estatistics.py"
+
+rule plot_estatistics:
+	"Plots E-test between each perturbation and 'control' cells."
+	input: 'tables/etest_{dataset}_tables.csv'
+	output: 'figures/etest_{dataset}.pdf'
+	params: iterations=1000
+	resources:
+		time='0-01:00:00',
+		mem_mb=4000,
+		disk_mb=4000
+	script: "scripts/snake_plot_estatistics.py"
+
+rule move_some_earth:
+	"""
+	Computes the 2-Wasserstein distance between all perturbation pairs.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/earth_mover_distances_{dataset}_tables.csv'
+	resources:
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		import scanpy as sc
+		import matplotlib.pyplot as pl
+		import seaborn as sns
+		import ot
+		from tqdm import tqdm
+		from sklearn.metrics import pairwise_distances
+		def transport (source, target):
+			n = source.shape[-1]
+			m = target.shape[-1]
+			a, b = np.ones((n,)) / n, np.ones((m,)) / m  # uniform distribution on samples
+
+			# loss matrix
+			loss_matrix = pairwise_distances(source.T, target.T, metric='sqeuclidean')
+			loss_matrix /= loss_matrix.max()
+
+			transport_matrix, log = ot.emd(a, b, loss_matrix, log=True)
+			cost = log['cost']
+			return cost
+		adata = sc.read(input[0])
+		groups = pd.unique(adata.obs['perturbation'])
+		df = pd.DataFrame(index=groups, columns=groups, dtype=float)
+		for i, p1 in enumerate(tqdm(groups)):
+			for p2 in groups[i:]:
+				x1 = adata[adata.obs.perturbation==p1].obsm['X_pca'].copy()
+				x2 = adata[adata.obs.perturbation==p2].obsm['X_pca'].copy()
+				cost = transport(x1, x2)
+				df.loc[p1, p2] = cost
+				df.loc[p2, p1] = cost
+		df.to_csv(output[0])
+
+rule compute_pairwise_edistance:
+	"""
+	Computes and plots the E-distance between all perturbation pairs.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'figures/pairwise_edist_{dataset}.pdf', 'tables/pairwise_edist_{dataset}_tables.csv'
+	resources:
+		time='16:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	script: 'scripts/snake_compute_pairwise_edistance.py'
+
+rule compute_edistance_to_control:
+	"""
+	Computes the E-distance of all perturbations to control cells.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/edist_to_control_{dataset}_tables.csv'
+	resources:
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	script: 'scripts/snake_compute_edistance_to_control.py'
+
+rule plot_umap:
+	"Plots a umap of cells with perturbations as colors."
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'figures/umap_{dataset}.pdf'
+	resources:
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	script: "scripts/snake_plot_umap.py"
+
+rule pseudobulk_correlations:
+	"""
+	Computes the pairwise correlation between pseudobulked perturbations in PCA space.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'figures/pseudobulk_correlations_{dataset}.pdf', 'tables/pseudobulk_correlations_{dataset}_tables.csv'
+	resources:
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		import scanpy as sc
+		import matplotlib.pyplot as pl
+		# project utils
+		sys.path.insert(1, '../../')
+		from utils import pseudo_bulk, cluster_matrix, plot_heatmap
+
+		adata = sc.read(input[0])
+		bdata = pseudo_bulk(adata, ['perturbation'])
+		sc.pp.normalize_per_cell(bdata)
+		sc.pp.log1p(bdata)
+		sc.pp.pca(bdata)
+		Z = bdata.obsm['X_pca']
+		df = pd.DataFrame(Z, index=bdata.obs.perturbation)
+		pca_corr = df.T.corr()
+		tab = cluster_matrix(pca_corr, 'both')
+		# plot
+		plot_heatmap(tab, wildcards.dataset+' pseudobulk correlations')
+		# export
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		tab.to_csv(output[1])
+		pl.close()
+
+rule effect_of_multi_vs_single_PCA:
+	"""Computes the E-distance between control and each perturbations 
+	1) using a PCA computed on all perturbations jointly
+	2) re-computing PCA for each control-perturbation combi.
+	Reasoning: PCA might be biased to represent highly abundant perturbations primarily.
+	Multi-PCA is probably computationally more expensive.
+	TODO: Run E-test each time.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5', 'tables/etest_{dataset}_tables.csv'
+	output: 
+		'figures/multi_vs_sineffect_of_multi_vs_single_PCA_{dataset}.pdf', 
+		'tables/effect_of_multi_vs_single_PCA_{dataset}_tables.csv'
+	resources:
+		time='4:00:00',
+		mem_mb=32000,
+		disk_mb=32000
+	run:
+		import scanpy as sc
+		import scvelo as scv
+		import seaborn as sns
+		import matplotlib.pyplot as pl
+		from tqdm import tqdm
+		# scperturb utils
+		sys.path.insert(1, '../../package/src/')
+		from scperturb import edist
+		# project utils
+		sys.path.insert(1, '../../')
+		from utils import pseudo_bulk
+
+		adata = sc.read(input[0])
+		et = pd.read_csv(input[1], index_col=0)
+		control = 'control'
+		groupby = 'perturbation'
+
+		res = {}
+		for group in tqdm(adata.obs[groupby].unique()):
+			if group==control:
+				continue
+			try:
+				sdata = adata[adata.obs[groupby].isin([control, group])].copy()
+				sc.pp.highly_variable_genes(sdata, n_top_genes=2000, layer='counts', flavor='seurat_v3')
+				sc.pp.pca(sdata)
+				res[group] = edist(sdata, 'perturbation', 'X_pca', verbose=False).iloc[0,1]
+			except:
+				print(f'Could not compute for {group}! Skipping...')
+				pass
+
+		ed_all = edist(adata)
+		ed_all_control = ed_all.loc[:, control]
+		ed_exclusive = pd.Series(res)
+		df = pd.concat([ed_all_control, ed_exclusive], axis=1)
+		df.columns = ['singlePCA', 'multiPCA']
+		df = df.fillna(0)
+		df = pd.concat([df, et], axis=1)
+		df.to_csv(output[1])
+
+		# scatter plot comparing E-distances
+		with sns.axes_style('whitegrid'):
+			fig, ax = pl.subplots(figsize=[7,5], dpi=100)
+		sns.regplot(data=df, x='singlePCA', y='multiPCA', ax=ax, scatter_kws={'s': 0})
+		sns.scatterplot(data=df, x='singlePCA', y='multiPCA', hue='significant_adj', ax=ax)
+		from scipy.stats import spearmanr
+		r = spearmanr(df.singlePCA, df.multiPCA)[0]
+		ax.set_title(f'E-distances of to unperturbed in {wildcards.dataset}\nSpearman correlation: {np.round(r,2)}')
+		ax.set_xlabel('with one joint PCA for all perturbations\n(singlePCA)')
+		ax.set_ylabel('with one extra PCA for each perturbation\n(multiPCA)')
+		pl.savefig(output[0], bbox_inches='tight', dpi=120)
+		pl.close()
+
+rule effect_of_nPCs:
+	"""
+	Computes the E-distance and E-test for each perturbation to control at different number of PCs.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/effect_of_nPCs_{dataset}_tables.csv'
+	resources:
+		time='2-23:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	params:
+		iterations=10
+	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
+		# scperturb utils
+		sys.path.insert(1, '../../package/src/')
+		from scperturb import edist, onesided_pca_distances, etest, self_pca_distances
+
+		adata = sc.read(input[0])
+		control = 'control'
+		groupby = 'perturbation'
+
+		sigs = {}
+		deltas = {}
+		tests = {}
+
+		# Define sample points ("nodes")
+		ns_ = leftsided_chebyshev_nodes(params.iterations)
+		ns_ = np.array(ns_ * 100, dtype=int)
+		ns_ = np.unique(ns_)
+		ns = ns_[ns_>0]
+		n_max = np.max(ns)
+
+   		sc.pp.pca(adata, use_highly_variable=False, n_comps=n_max)
+		for n in ns:
+			tdata = adata.copy()
+			tdata.obsm['X_pca'] = adata.obsm['X_pca'][:, :int(n)].copy()  # subset PCA to use only n first PCs
+        	
+			# STATS
+			deltas[n] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)
+			sigs[n] = self_pca_distances(tdata, groupby, verbose=False)
+			# E-test
+			tests[n] = etest(tdata, groupby, control='control', runs=100)
+
+		sdf = pd.concat([
+			pd.concat(tests),
+			pd.concat(deltas),
+			pd.concat(sigs),
+		], axis=1).reset_index()
+		sdf.columns = ['n', groupby, 'edist', 'pvalue', 'significant', 'pvalue_adj', 'significant_adj', 'delta', 'sigma']
+		sdf['significant_adj'][sdf[groupby]==control]='control'
+		# annotate newly insignificant
+		sdf['significant_adj_new'] = sdf['significant_adj']
+		for g in sdf.perturbation.unique():
+			if sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==n_max)].iloc[0]==True:
+				sdf['significant_adj_new'][(sdf[groupby]==g) & (sdf['significant_adj']==False)] = 'False (lost)'
+			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==n_max)].iloc[0]==False:
+				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
+		sdf.to_csv(output[0])
+
+rule estats_feature_selection:
+	"""
+	Computes the E-distance and E-test for each perturbation to control at 
+	different methods of feature selection for PCA.
+  	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 
+		'tables/estats_feature_selection_{dataset}_tables.csv',
+		'figures/estats_feature_selection_{dataset}.pdf'
+	resources:
+		time='2-23:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	params:
+		iterations=10
+	script: 'scripts/snake_estats_feature_selection.py'
+
+rule effect_of_ncells:
+	"""
+	Subsamples number of cells, computes E-distance and E-test at each subsampling point.
+	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/effect_of_ncells_{dataset}_tables.csv'
+	resources:
+		time='24:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	params:
+		iterations=10
+	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
+		# scperturb utils
+		sys.path.insert(1, '../../package/src/')
+		from scperturb import edist, onesided_pca_distances, etest, self_pca_distances
+
+		adata = sc.read(input[0])
+		control = 'control'
+		groupby = 'perturbation'
+
+		sigs = {}
+		deltas = {}
+		tests = {}
+		ncells = {}
+
+		# Define sample points ("nodes")
+		total_cells = adata.obs.perturbation.value_counts().iloc[0]  # number of cells per group
+		ns = leftsided_chebyshev_nodes(params.iterations)
+
+		total_counts = np.sum(adata.X>0)
+		for n in ns:
+			# subsample cells
+			tdata = strict_equal_subsampling(adata, 'perturbation', N=int(np.ceil(total_cells * n)))
+			tdata.obs['ncells'] = tdata.X.sum(1)
+			ncells[n] = tdata.obs[groupby].value_counts()
+
+			sc.pp.pca(tdata, use_highly_variable=False)
+			# STATS
+			deltas[n] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)  # THIS THROWS AN ERROR
+			# Found array with 0 sample(s) (shape=(0, 10)) while a minimum of 1 is required by check_pairwise_arrays.
+			sigs[n] = self_pca_distances(tdata, groupby, verbose=False)
+			# E-test
+			tests[n] = etest(tdata, groupby, control='control', runs=100)
+
+		# merge results
+		sdf = pd.concat([
+			pd.concat(tests),
+			pd.concat(deltas),
+			pd.concat(sigs),
+			pd.concat(ncells)
+		], axis=1).reset_index()
+		sdf.columns = ['n', groupby, 'edist', 'pvalue', 'significant', 'pvalue_adj', 'significant_adj', 'delta', 'sigma', 'ncells']
+		sdf['significant_adj'][sdf[groupby]==control]='control'
+
+		# annotate newly insignificant
+		sdf['significant_adj_new'] = sdf['significant_adj']
+		for g in sdf.perturbation.unique():
+			if sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==True:
+				sdf['significant_adj_new'][(sdf[groupby]==g) & (sdf['significant_adj']==False)] = 'False (lost)'
+			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==False:
+				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
+		
+		# export results
+		sdf.to_csv(output[0])
+
+rule effect_of_ncells_:
+	"""
+	Subsamples number of cells, computes E-distance and E-test at each subsampling point.
+	"""
+	input: TEMPDIR / '500_tmp_data_{dataset}.h5'
+	output: 'tables/500_effect_of_ncells_{dataset}_tables.csv'
+	resources:
+		time='24:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	params:
+		iterations=10
+	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
+		# scperturb utils
+		sys.path.insert(1, '../../package/src/')
+		from scperturb import edist, onesided_pca_distances, etest, self_pca_distances
+
+		adata = sc.read(input[0])
+		control = 'control'
+		groupby = 'perturbation'
+
+		sigs = {}
+		deltas = {}
+		tests = {}
+		ncells = {}
+
+		# Define sample points ("nodes")
+		total_cells = adata.obs.perturbation.value_counts().iloc[0]  # number of cells per group
+		ns = leftsided_chebyshev_nodes(params.iterations)
+
+		total_counts = np.sum(adata.X>0)
+		for n in ns:
+			# subsample cells
+			tdata = strict_equal_subsampling(adata, 'perturbation', N=int(np.ceil(total_cells * n)))
+			tdata.obs['ncells'] = tdata.X.sum(1)
+			ncells[n] = tdata.obs[groupby].value_counts()
+
+			sc.pp.pca(tdata, use_highly_variable=False)
+			# STATS
+			deltas[n] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)  # THIS THROWS AN ERROR
+			# Found array with 0 sample(s) (shape=(0, 10)) while a minimum of 1 is required by check_pairwise_arrays.
+			sigs[n] = self_pca_distances(tdata, groupby, verbose=False)
+			# E-test
+			tests[n] = etest(tdata, groupby, control='control', runs=100)
+
+		# merge results
+		sdf = pd.concat([
+			pd.concat(tests),
+			pd.concat(deltas),
+			pd.concat(sigs),
+			pd.concat(ncells)
+		], axis=1).reset_index()
+		sdf.columns = ['n', groupby, 'edist', 'pvalue', 'significant', 'pvalue_adj', 'significant_adj', 'delta', 'sigma', 'ncells']
+		sdf['significant_adj'][sdf[groupby]==control]='control'
+
+		# annotate newly insignificant
+		sdf['significant_adj_new'] = sdf['significant_adj']
+		for g in sdf.perturbation.unique():
+			if sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==True:
+				sdf['significant_adj_new'][(sdf[groupby]==g) & (sdf['significant_adj']==False)] = 'False (lost)'
+			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==False:
+				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
+		
+		# export results
+		sdf.to_csv(output[0])
+
+rule effect_of_ncounts:
+	"""
+	Subsamples UMI counts, computes E-distance and E-test at each subsampling point per perturbation to control.
+	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/effect_of_ncounts_{dataset}_tables.csv'
+	resources:
+		time='24:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	params:
+		iterations=10
+	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
+		# scperturb utils
+		sys.path.insert(1, '../../package/src/')
+		from scperturb import edist, onesided_pca_distances, etest, self_pca_distances
+
+		adata = sc.read(input[0])
+		adata.X = adata.layers['counts'].copy()  # reset to raw counts
+		control = 'control'
+		groupby = 'perturbation'
+
+		sigs = {}
+		deltas = {}
+		tests = {}
+		ncounts = {}
+
+		# Define sample points ("nodes")
+		# ns = np.linspace(0.01, 1, num=params.iterations)
+		ns = leftsided_chebyshev_nodes(params.iterations)
+
+		total_counts = np.sum(adata.X>0)
+		for n in ns:
+			tdata = sc.pp.downsample_counts(adata, total_counts=int(n*total_counts), copy=True)
+			tdata.obs['ncounts'] = tdata.X.sum(1)
+			ncounts[n] = tdata.obs.groupby(groupby).mean()['ncounts']
+			sc.pp.normalize_per_cell(tdata)
+			sc.pp.log1p(tdata)
+			sc.pp.highly_variable_genes(tdata, n_top_genes=2000)
+			sc.pp.pca(tdata, use_highly_variable=False)
+			# STATS
+			deltas[n] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)
+			sigs[n] = self_pca_distances(tdata, groupby, verbose=False)
+			# E-test
+			tests[n] = etest(tdata, groupby, control='control', runs=100)
+
+		sdf = pd.concat([
+			pd.concat(tests),
+			pd.concat(deltas),
+			pd.concat(sigs),
+			pd.concat(ncounts)
+		], axis=1).reset_index()
+		sdf.columns = ['n', groupby, 'edist', 'pvalue', 'significant', 'pvalue_adj', 'significant_adj', 'delta', 'sigma', 'ncounts']
+		sdf['significant_adj'][sdf[groupby]==control]='control'
+		# annotate newly insignificant
+		sdf['significant_adj_new'] = sdf['significant_adj']
+		for g in sdf.perturbation.unique():
+			if sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==True:
+				sdf['significant_adj_new'][(sdf[groupby]==g) & (sdf['significant_adj']==False)] = 'False (lost)'
+			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']==1)].iloc[0]==False:
+				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
+		sdf.to_csv(output[0])
+
+rule effect_of_both:
+	"""
+	Subsamples UMI counts AND cells, computes E-distance and E-test at each subsampling point per perturbation to control.
+	"""
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/effect_of_both_{dataset}_tables.csv'
+	resources:
+		time='2-24:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	params:
+		iterations_cells=8,
+		iterations_counts=8,
+		etest_runs=50,  # should do at least 100 !
+	run:
+		import scanpy as sc
+		import scvelo as scv
+		import matplotlib.pyplot as pl
+		# scperturb utils
+		sys.path.insert(1, '../../package/src/')
+		from scperturb import edist, onesided_pca_distances, etest, self_pca_distances
+
+		# load and prepare data
+		adata = sc.read(input[0])
+		adata.X = adata.layers['counts'].copy()  # reset to raw counts
+		control = 'control'
+		groupby = 'perturbation'
+
+		sigs = {}
+		deltas = {}
+		tests = {}
+		ncounts = {}
+		ncells = {}
+
+		# Define sample points ("nodes")
+		total_cells = adata.obs.perturbation.value_counts().iloc[0]  # number of cells per group
+		ns_cells = leftsided_chebyshev_nodes(params.iterations_cells)
+		ns_counts = leftsided_chebyshev_nodes(params.iterations_counts)
+
+		# Note: We should first subsample cells, then counts, because the number of total counts changes when removing cells.
+		for n_cells in ns_cells:
+			for n_counts in ns_counts:
+				index = f'{n_cells}_{n_counts}'
+
+				# subsample cells
+				tdata = strict_equal_subsampling(adata, 'perturbation', N=int(np.ceil(total_cells * n_cells)))
+				tdata.obs['ncells'] = tdata.X.sum(1)
+				ncells[index] = tdata.obs[groupby].value_counts()
+
+				# subsample *remaining* counts
+				total_counts = np.sum(tdata.X>0)
+				tdata = sc.pp.downsample_counts(tdata, total_counts=int(n_counts*total_counts), copy=True) if n_counts!=1 else adata.copy()
+				tdata.obs['ncounts'] = tdata.X.sum(1)
+				ncounts[index] = tdata.obs.groupby(groupby).mean()['ncounts']
+
+				# newly preprocess data
+				sc.pp.normalize_per_cell(tdata)
+				sc.pp.log1p(tdata)
+				try:
+					sc.pp.highly_variable_genes(tdata, n_top_genes=2000)
+				except:
+					# Not enough counts to have 2000 HVGs
+					sc.pp.highly_variable_genes(tdata, n_top_genes=1000)
+				sc.pp.pca(tdata, use_highly_variable=False)
+
+				# STATS
+				deltas[index] = onesided_pca_distances(tdata, obs_key=groupby, control=control, verbose=False)
+				sigs[index] = self_pca_distances(tdata, groupby, verbose=False)
+				# E-test
+				tests[index] = etest(tdata, groupby, control='control', runs=params.etest_runs)
+
+		# merge results
+		sdf = pd.concat([
+			pd.concat(tests),
+			pd.concat(deltas),
+			pd.concat(sigs),
+			pd.concat(ncounts),
+			pd.concat(ncells)
+		], axis=1).reset_index()
+		sdf.columns = ['n', groupby, 'edist', 'pvalue', 'significant', 'pvalue_adj', 'significant_adj', 'delta', 'sigma', 'ncounts', 'ncells']
+		sdf['significant_adj'][sdf[groupby]==control]='control'
+
+		# annotate newly insignificant
+		sdf['significant_adj_new'] = sdf['significant_adj']
+		for g in sdf.perturbation.unique():
+			if sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']=='1.0_1.0')].iloc[0]==True:
+				sdf['significant_adj_new'][(sdf[groupby]==g) & (sdf['significant_adj']==False)] = 'False (lost)'
+			elif sdf['significant_adj'][(sdf[groupby]==g) & (sdf['n']=='1.0_1.0')].iloc[0]==False:
+				sdf['significant_adj_new'][(sdf.perturbation==g) & (sdf['significant_adj']==True)] = 'True (gained)'
+
+		# export results
+		sdf.to_csv(output[0])
+
+rule compare_edistance_flavors:
+	"Test bias of edistance versions w.r.t. cell counts"
+	input: DOWNDIR / '{dataset}.h5ad'
+	output: 
+		'tables/comparison_edistance_flavors_{dataset}_table.csv',
+		'figures/comparison_edistance_flavors_{dataset}.png'
+	resources:
+		time='5-24:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	params:
+		N_max = 1000,  # highest number of cells to subsample to
+		N_eval_points = 10,  # number of points to evaluate edistance at
+		N_resample = 50  # number of times to resample at each point
+	script: 'scripts/snake_compare_edistance_flavors.py'
+
+rule compare_edistance_flavors_fixPCA:
+	"Test bias of edistance versions w.r.t. cell counts"
+	input: DOWNDIR / '{dataset}.h5ad'
+	output: 
+		'tables/comparison_edistance_fixPCA_flavors_{dataset}_table.csv',
+		'figures/comparison_edistance_fixPCA_flavors_{dataset}.png'
+	resources:
+		time='5-24:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	params:
+		N_max = 1000,  # highest number of cells to subsample to
+		N_eval_points = 10,  # number of points to evaluate edistance at
+		N_resample = 50  # number of times to resample at each point
+	script: 'scripts/snake_compare_edistance_flavors_fixPCA.py'
+
+rule two_multidim_gaussians:
+	"Simulations using two multidimensional Gaussians"
+	output: 
+		'figures/edistance_vs_dimension.pdf',
+		'figures/edistance_vs_samplesize_uncorrected.pdf',
+		'figures/edistance_vs_samplesize_corrected.pdf'
+	resources:
+		time='0-00:30:00',
+		mem_mb=64000,
+		disk_mb=64000
+	script: 'scripts/snake_two_multidim_gaussians.py'
+
+rule mprofile:
+	"Profile memory usage of edistance calculation"
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/memory_profile_{dataset}.log'
+	shell:
+		"""
+		python -m memory_profiler \
+		scripts/snake_mprofile.py -i {input} -o {output}
+		"""
+
+rule cprofile:
+	"Profile CPU usage of edistance calculation"
+	input: TEMPDIR / 'tmp_data_{dataset}.h5'
+	output: 'tables/cpu_profile_{dataset}.prof'
+	shell:
+		"""
+		python -m cProfile -o {output} -s time \
+		scripts/snake_cprofile.py -i {input} -o {output}
+		"""
+
+rule sweep_scperturb:
+	"A single evaluation for the grid search."
+	input: DOWNDIR / '{dataset}.h5ad'
+	output: TEMPDIR / 'sweep/etest_{dataset}_{ncounts}_{ncells}_{npcs}_{nhvgs}_tables.csv'
+	params: iterations=10000
+	threads: 64
+	resources:
+		time='4:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	script: "scripts/snake_sweep_scperturb.py"
