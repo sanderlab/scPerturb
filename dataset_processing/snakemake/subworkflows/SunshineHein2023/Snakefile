@@ -1,0 +1,41 @@
+"""
+Author: Stefan Peidli
+Date: 16.10.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+
+# ### RULES ###
+rule SunshineHein2023:
+    input: DATADIR / 'CRISPR_transcriptome_with_sgRNA_raw_all_data.h5ad'  # obtained through personal communication with authors
+    output: DATADIR / 'SunshineHein2023.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script: 'SunshineHein2023.py'
+
+rule SunshineHein2023_download:
+    output:
+        TEMPDIR / 'SunshineHein2023/GSE217066_210715_combinatorial.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        cd {TEMPDIR}/SunshineHein2023
+        wget -O GSE208240_CRISPRi_perturbseq_sarscov2_filtered.tar.gz https://ftp.ncbi.nlm.nih.gov/geo/series/GSE208nnn/GSE208240/suppl/GSE208240%5FCRISPRi%5Fperturbseq%5Fsarscov2%5Ffiltered.tar.gz
+        tar -xzf GSE208240_CRISPRi_perturbseq_sarscov2_filtered.tar.gz
+        mv data/sunshine/perturb_seq/sars_cov_2_geo_upload/CRISPRi_perturbseq_sarscov2_filtered/* .
+        rm -r data
+        rm GSE208240_CRISPRi_perturbseq_sarscov2_filtered.tar.gz
+        gunzip matrix.mtx.gz
+        """

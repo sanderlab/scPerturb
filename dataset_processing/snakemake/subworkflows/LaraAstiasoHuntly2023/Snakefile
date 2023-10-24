@@ -1,0 +1,36 @@
+"""
+Author: Stefan Peidli
+Date: 16.10.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+
+# ### RULES ###
+rule LaraAstiasoHuntly2023:
+    input: DATADIR / 'CRISPR_transcriptome_with_sgRNA_raw_all_data.h5ad'  # obtained through personal communication with authors
+    output: DATADIR / 'LaraAstiasoHuntly2023.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script: 'LaraAstiasoHuntly2023.py'
+
+rule LaraAstiasoHuntly2023_download:
+    output:
+        combinatorial = TEMPDIR / 'LaraAstiasoHuntly2023/GSE217066_210715_combinatorial.h5ad',
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        cd {TEMPDIR}/LaraAstiasoHuntly2023
+        wget --recursive --no-parent -nd -R "index.html*" ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE213nnn/GSE213511/suppl/
+        """

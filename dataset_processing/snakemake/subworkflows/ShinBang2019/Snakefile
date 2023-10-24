@@ -1,0 +1,36 @@
+"""
+Author: Stefan Peidli
+Date: 16.10.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+
+# ### RULES ###
+# rule ShinBang2019:
+#     input: DATADIR / 'CRISPR_transcriptome_with_sgRNA_raw_all_data.h5ad'  # obtained through personal communication with authors
+#     output: DATADIR / 'ShinBang2019.h5ad'
+#     resources:
+#         partititon='short',
+#         time='04:00:00',
+#         mem_mb=128000,
+#         disk_mb=128000
+#     script: 'ShinBang2019.py'
+
+rule get_fastq_pe_gz:
+    # https://snakemake-wrappers.readthedocs.io/en/stable/wrappers/sra-tools/fasterq-dump.html#notes
+    output:
+        # the wildcard name must be accession, pointing to an SRA number
+        "data/pe/{accession}_1.fastq.gz",
+        "data/pe/{accession}_2.fastq.gz",
+    log:
+        "logs/pe/{accession}.gz.log"
+    params:
+        extra="--skip-technical"
+    threads: 6  # defaults to 6
+    wrapper:
+        "v2.6.0/bio/sra-tools/fasterq-dump"

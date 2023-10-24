@@ -23,6 +23,7 @@ DOWNDIR = Path(config["DOWNDIR"])
 tab = pd.read_excel('../../metadata/scperturb_dataset_info.xlsx')  # supplemental table
 df = tab[tab['Modality = Data type'].isin(['RNA', 'RNA + protein (RNA)'])]
 df.index = [a if pd.isna(b) else a+'_'+b for a, b in zip(df[df.columns[0]], df[df.columns[1]])]
+all_datasets = list(df.index)
 datasets = list(df.index)
 remove_these = [
 	# complex study designs
@@ -67,7 +68,7 @@ def strict_equal_subsampling(adata, obs_key, N):
 rule all:
 	input:
 	  	# RNA Dataset preparation
-		expand(DOWNDIR / '{dataset}.h5ad', dataset=datasets),
+		expand(DOWNDIR / '{dataset}.h5ad', dataset=all_datasets),
 		# expand(TEMPDIR / 'tmp_data_{dataset}.h5', dataset=datasets),
 		DOWNDIR / 'all_obs.csv',
 		# # E-stats (E-test and E-dist w.r.t. control and pairwise E-dists)
@@ -108,8 +109,12 @@ rule all:
 
 rule merge_obs:
 	"Merge all obs.csv files into one."
-	input: expand(TEMPDIR / 'obs/{dataset}.csv', dataset=datasets)
+	input: expand(TEMPDIR / 'obs/{dataset}.csv', dataset=all_datasets)
 	output: DOWNDIR / 'all_obs.csv'
+	resources:
+		time='0:30:00',
+		mem_mb=64000,
+		disk_mb=64000
 	run:
 		import pandas as pd
 		df = pd.concat([pd.read_csv(f) for f in input])
@@ -125,7 +130,7 @@ rule extract_obs:
 	run:
 		import scanpy as sc
 		adata = sc.read(input[0])
-		adata.obs.dataset = wildcards.dataset
+		adata.obs['dataset'] = wildcards.dataset
 		adata.obs.to_csv(output[0])
 
 rule zenodo_download:
