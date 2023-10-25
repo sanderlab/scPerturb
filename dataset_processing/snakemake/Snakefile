@@ -21,6 +21,7 @@ include: "subworkflows/QinTape2023/Snakefile"
 include: "subworkflows/YaoCleary2023/Snakefile"
 include: "subworkflows/WuBassett2023/Snakefile"
 include: "subworkflows/XuCao2023/Snakefile"
+include: "subworkflows/SantinhaPlatt2023/Snakefile"
 
 ### RULES ###
 rule all:
@@ -29,8 +30,12 @@ rule all:
         rules.JoungZhang2023.input,
         rules.YaoCleary2023.output,
         rules.QinTape2023.output,
+        rules.SantinhaPlatt2023.output,
         # WIP
-        # rules.WuBassett2023.output,
         rules.XuCao2023.output,
-        rules.McFalineTrapnell2023_download.output,
+        rules.McFalineTrapnell2023_download.output
+        # dysfunct
+        # rules.WuBassett2023.output,  # obtained from original authors, maybe a copy is still left on my charité mac?
+
+        
         

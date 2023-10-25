@@ -1,0 +1,85 @@
+"""
+Author: Stefan Peidli
+Date: 24.10.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files
+
+# ### RULES ###
+rule SantinhaPlatt2023:
+    "We only process the main pooled screen for now."
+    input: 
+        TEMPDIR / 'SantinhaPlatt2023/SantinhaPlatt2023_GSE236519_pooled_screen_CBh_temp.h5ad'
+    output: 
+        TEMPDIR / 'SantinhaPlatt2023/SantinhaPlatt2023.h5ad'
+    resources:
+        partititon='short',
+        time='01:00:00',
+        mem_mb=32000,
+        disk_mb=32000
+    script: 'SantinhaPlatt2023.py'
+
+rule SantinhaPlatt2023_reassemble:
+    input:
+        TEMPDIR / 'SantinhaPlatt2023/{name}_matrix.mtx',
+        TEMPDIR / 'SantinhaPlatt2023/{name}_genes.csv',
+        TEMPDIR / 'SantinhaPlatt2023/{name}_barcodes.csv',
+        TEMPDIR / 'SantinhaPlatt2023/{name}_pca.csv',
+        TEMPDIR / 'SantinhaPlatt2023/{name}_umap.csv',
+        TEMPDIR / 'SantinhaPlatt2023/{name}_metadata.csv'
+    output:
+        temp(TEMPDIR / 'SantinhaPlatt2023/SantinhaPlatt2023_{name}_temp.h5ad')
+    resources:
+        partititon='short',
+        time='00:30:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        python ../../../utils/merge_from_extract.py -i $(dirname {input[0]}) -o {output} -n {wildcards.name}
+        """
+
+rule SantinhaPlatt2023_extract:
+    input:
+        TEMPDIR / 'SantinhaPlatt2023/{name}.rds'
+    output:
+        temp(TEMPDIR / 'SantinhaPlatt2023/{name}_matrix.mtx'),
+        temp(TEMPDIR / 'SantinhaPlatt2023/{name}_genes.csv'),
+        temp(TEMPDIR / 'SantinhaPlatt2023/{name}_barcodes.csv'),
+        temp(TEMPDIR / 'SantinhaPlatt2023/{name}_pca.csv'),
+        temp(TEMPDIR / 'SantinhaPlatt2023/{name}_umap.csv'),
+        temp(TEMPDIR / 'SantinhaPlatt2023/{name}_metadata.csv')
+    conda: 'r_env' # '../../../../environments/r_env.yaml'
+    resources:
+        partititon='short',
+        time='00:30:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        Rscript ../../../utils/extract.R -n {wildcards.name} -f {input} -o {TEMPDIR}/SantinhaPlatt2023
+        """
+
+rule SantinhaPlatt2023_download:
+    output:
+        temp(TEMPDIR / 'SantinhaPlatt2023/GSE236519_arrayed_CRISPRi_hSyn.rds'),
+        temp(TEMPDIR / 'SantinhaPlatt2023/GSE236519_arrayed_screen_hSyn.rds'),
+        temp(TEMPDIR / 'SantinhaPlatt2023/GSE236519_lgdel_model.rds'),
+        temp(TEMPDIR / 'SantinhaPlatt2023/GSE236519_pooled_screen_CBh.rds')
+    resources:
+        partititon='short',
+        time='00:30:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        cd {TEMPDIR}/SantinhaPlatt2023
+        wget --recursive --no-parent -nd -R "index.html*" ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE236nnn/GSE236519/suppl/
+        gunzip *.rds.gz
+        """

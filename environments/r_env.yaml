@@ -10,4 +10,3 @@ dependencies:
   - conda-forge::r-base>=4.1
   - conda-forge::r-seurat
   - conda-forge::r-irkernel
-  # - bioconda::bioconductor-zellkonverter

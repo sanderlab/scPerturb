@@ -1,0 +1,25 @@
+---
+title: "SantinhaPlatt2023"
+output: html_notebook
+---
+
+```{r}
+library(Seurat)
+```
+
+
+```{r}
+TMPDIR <- '/scratch/peidli/scPerturb/SantinhaPlatt2023'
+DATADIR <- '/home/peidli/data/scPerturb/'
+```
+
+
+```{r}
+data <- readRDS(paste(TMPDIR, 'GSE236519_arrayed_CRISPRi_hSyn.rds', sep='/'))
+```
+
+
+```{r}
+data
+```
+
