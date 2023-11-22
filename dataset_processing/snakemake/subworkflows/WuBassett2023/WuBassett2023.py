@@ -46,4 +46,4 @@ adata.obs.index.name = 'cell_barcode'
 
 assert_annotations(adata)
 
-adata.write(snakemake.output[0])
+adata.write(snakemake.output[0], compression='gzip')

@@ -8,8 +8,8 @@ import h5py
 from scipy.sparse import csr_matrix, vstack
 
 # Custom functions
-sys.path.insert(1, '../')
-from utils import *
+sys.path.insert(1, '../../')
+from utils import annotate_qc, assert_annotations
 
 ### Combinatorial screen ###
 print('Combinatorial screen')

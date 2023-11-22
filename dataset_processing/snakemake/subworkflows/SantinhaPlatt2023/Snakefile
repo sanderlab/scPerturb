@@ -17,7 +17,7 @@ rule SantinhaPlatt2023:
     input: 
         TEMPDIR / 'SantinhaPlatt2023/SantinhaPlatt2023_GSE236519_pooled_screen_CBh_temp.h5ad'
     output: 
-        TEMPDIR / 'SantinhaPlatt2023/SantinhaPlatt2023.h5ad'
+        DATADIR / 'SantinhaPlatt2023.h5ad'
     resources:
         partititon='short',
         time='01:00:00',
@@ -40,10 +40,7 @@ rule SantinhaPlatt2023_reassemble:
         time='00:30:00',
         mem_mb=64000,
         disk_mb=64000
-    shell:
-        """
-        python ../../../utils/merge_from_extract.py -i $(dirname {input[0]}) -o {output} -n {wildcards.name}
-        """
+    shell: "python ../utils/merge_from_extract.py -i $(dirname {input[0]}) -o {output} -n {wildcards.name}"
 
 rule SantinhaPlatt2023_extract:
     input:
@@ -61,10 +58,7 @@ rule SantinhaPlatt2023_extract:
         time='00:30:00',
         mem_mb=64000,
         disk_mb=64000
-    shell:
-        """
-        Rscript ../../../utils/extract.R -n {wildcards.name} -f {input} -o {TEMPDIR}/SantinhaPlatt2023
-        """
+    shell: "Rscript ../utils/extract.R -f {input} -n {wildcards.name} -o $(dirname {output[0]})"
 
 rule SantinhaPlatt2023_download:
     output:

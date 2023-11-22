@@ -11,7 +11,7 @@ from pathlib import Path
 configfile: "../../configuration/config.yaml"
 
 ### PATHS ###
-DATADIR = Path(config['DOWNDIR'])  # place to store data
+DOWNDIR = Path(config['DOWNDIR'])  # place to store data
 TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
 
 ### SUBWORKFLOWS ###
@@ -22,6 +22,9 @@ include: "subworkflows/YaoCleary2023/Snakefile"
 include: "subworkflows/WuBassett2023/Snakefile"
 include: "subworkflows/XuCao2023/Snakefile"
 include: "subworkflows/SantinhaPlatt2023/Snakefile"
+include: "subworkflows/LaraAstiasoHuntly2023/Snakefile"
+include: "subworkflows/SunshineHein2023/Snakefile"
+
 
 ### RULES ###
 rule all:
@@ -29,13 +32,12 @@ rule all:
         # Finished or WIP
         rules.JoungZhang2023.input,
         rules.YaoCleary2023.output,
-        rules.QinTape2023.output,
+        rules.QinTape2023.output,  # only scRNA-seq for now, CyTOF maybe later
         rules.SantinhaPlatt2023.output,
-        # WIP
+        # rules.McFalineTrapnell2023.output,  # screen 2 too big. OOF???
         rules.XuCao2023.output,
-        rules.McFalineTrapnell2023_download.output
+        rules.LaraAstiasoHuntly2023.output,
+        rules.SunshineHein2023.output
         # dysfunct
         # rules.WuBassett2023.output,  # obtained from original authors, maybe a copy is still left on my charité mac?
 
-        
-        

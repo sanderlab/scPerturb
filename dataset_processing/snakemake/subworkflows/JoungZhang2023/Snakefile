@@ -19,8 +19,8 @@ rule JoungZhang2023:
 
 rule JoungZhang2023_download:
     output:
-        combinatorial = TEMPDIR / 'JoungZhang2023/GSE217066_210715_combinatorial.h5ad',
-        atlas = TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad'
+        combinatorial = temp(TEMPDIR / 'JoungZhang2023/GSE217066_210715_combinatorial.h5ad'),
+        atlas = temp(TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad')
     resources:
         partititon='short',
         time='04:00:00',

@@ -10,10 +10,45 @@ configfile: "../../configuration/config.yaml"
 ### PATHS ###
 DATADIR = Path(config['DOWNDIR'])  # place to store data
 
+files = ['GSE213511_inVivo_OP3_ckit_14d_1.h5',
+'GSE213511_DM_CITEseq-1_NA_NM_1.h5',
+'GSE213511_DM_Test1_NM_6d_1.h5',
+'GSE213511_LSK_OP1_NM_9d_1.h5',
+'GSE213511_inVivo_OP4_lin-_14d_1.h5',
+'GSE213511_DM_OP3_NM_6d_1.h5',
+'GSE213511_inVivo_OP2_ckit_14d_1.h5',
+'GSE213511_LSK_OP2_NM_7d_1.h5',
+'GSE213511_DM_OP2_NM_6d_2.h5',
+'GSE213511_DM_CITEseq-2_NA_NM_1.h5',
+'GSE213511_DM_OP1_NM_6d_1.h5',
+'GSE213511_DM_OP2_NM_6d_3.h5',
+'GSE213511_LSK_OP3_NM_9d_1.h5',
+'GSE213511_inVivo_NTC_lin-andckit_14d_1.h5',
+'GSE213511_DM_OP1_NM_6d_2.h5',
+'GSE213511_LSK_OP1_NM_7d_1.h5',
+'GSE213511_inVivo_OP3_lin-_14d_1.h5',
+'GSE213511_LSK_OP2_NM_9d_1.h5',
+'GSE213511_DM_OP5_NM_6d_1.h5',
+'GSE213511_inVivo_OP1_lin-_28d_1.h5',
+'GSE213511_DM_OP2_NM_6d_1.h5',
+'GSE213511_inVivo_OP4_ckit_14d_1.h5',
+'GSE213511_LSK_OP4_NM_7d_1.h5',
+'GSE213511_DM_OP0_NM_6d_1.h5',
+'GSE213511_LSK_OP3_NM_7d_1.h5',
+'GSE213511_DM_Test2_NM_6d_1.h5',
+'GSE213511_inVivo_OP1_lin-_28d_2.h5',
+'GSE213511_LSK_OP4_NM_9d_1.h5',
+'GSE213511_inVivo_OP1_ckit_14d_1.h5',
+'GSE213511_inVivo_OP1_lin-_14d_2.h5',
+'GSE213511_inVivo_OP2_lin-_14d_1.h5',
+'GSE213511_DM_OP4_NM_6d_1.h5',
+'GSE213511_inVivo_OP1_lin-_14d_1.h5',
+'GSE213511_LSK_OP0_NM_7d_1.h5']
+
 # ### RULES ###
 rule LaraAstiasoHuntly2023:
-    input: DATADIR / 'CRISPR_transcriptome_with_sgRNA_raw_all_data.h5ad'  # obtained through personal communication with authors
-    output: DATADIR / 'LaraAstiasoHuntly2023.h5ad'
+    input: expand(TEMPDIR / 'LaraAstiasoHuntly2023/{file}', file=files)
+    output: expand(DATADIR / 'LaraAstiasoHuntly2023_{key}.h5ad', key=['leukemia', 'invivo', 'exvivo'])
     resources:
         partititon='short',
         time='04:00:00',
@@ -23,7 +58,7 @@ rule LaraAstiasoHuntly2023:
 
 rule LaraAstiasoHuntly2023_download:
     output:
-        combinatorial = TEMPDIR / 'LaraAstiasoHuntly2023/GSE217066_210715_combinatorial.h5ad',
+        temp(expand(TEMPDIR / 'LaraAstiasoHuntly2023/{file}', file=files))
     resources:
         partititon='short',
         time='04:00:00',
@@ -31,6 +66,7 @@ rule LaraAstiasoHuntly2023_download:
         disk_mb=64000
     shell:
         """
-        cd {TEMPDIR}/LaraAstiasoHuntly2023
+        mkdir -p {TEMPDIR}/LaraAstiasoHuntly2023/
+        cd {TEMPDIR}/LaraAstiasoHuntly2023/
         wget --recursive --no-parent -nd -R "index.html*" ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE213nnn/GSE213511/suppl/
         """

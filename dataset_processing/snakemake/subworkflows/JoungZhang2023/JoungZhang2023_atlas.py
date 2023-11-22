@@ -5,11 +5,12 @@ import sys
 import re
 import h5py
 
+from tqdm import tqdm
 from scipy.sparse import csr_matrix, vstack
 
 # Custom functions
-sys.path.insert(1, '../')
-from utils import *
+sys.path.insert(1, '../../')
+from utils import annotate_qc, assert_annotations
 
 ### TF atlas ###
 print('TF atlas')

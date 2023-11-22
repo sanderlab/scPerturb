@@ -6,8 +6,8 @@ from tqdm import tqdm
 from pathlib import Path
 
 # Custom functions
-sys.path.insert(1, '../')
-from utils import *
+sys.path.insert(1, '../../')
+from utils import annotate_qc, assert_annotations
 
 TEMPDIR = Path(snakemake.config['TEMPDIR']) 
 files = sorted([file for file in (TEMPDIR / 'QinTape2023/Count Matrices & CellRanger Reports').glob('*') if 'DS_Store' not in file.name])

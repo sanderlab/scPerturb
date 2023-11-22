@@ -1,7 +1,7 @@
 name: scPerturb dataset info
 datasets:
   dataset_info:
-    path: "scperturb_dataset_info_test.csv"
+    path: "scperturb_dataset_info_datavzrd.csv"
 default-view: dataset_info
 views:
   dataset_info:
@@ -15,7 +15,9 @@ views:
     render-table:
       columns:
         Download Link:
-          link-to-url: "https://zenodo.org/record/{Zenodo ID}/files/{Full index}.{File Extension}"
+          link-to-url: 
+            zenodo:
+              url: "https://zenodo.org/record/{Zenodo ID}/files/{Full index}.{File Extension}"
         Full index:
           display-mode: hidden
         Zenodo ID:
@@ -23,7 +25,9 @@ views:
         File Extension:
           display-mode: hidden
         Title:
-          link-to-url: "{doi_url}"
+          link-to-url: 
+            doi: 
+              url: "{doi_url}"
         Disease:
           display-mode: detail
         Cell Type:

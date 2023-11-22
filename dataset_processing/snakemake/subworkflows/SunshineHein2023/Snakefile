@@ -12,7 +12,11 @@ DATADIR = Path(config['DOWNDIR'])  # place to store data
 
 # ### RULES ###
 rule SunshineHein2023:
-    input: DATADIR / 'CRISPR_transcriptome_with_sgRNA_raw_all_data.h5ad'  # obtained through personal communication with authors
+    input:
+        TEMPDIR / 'SunshineHein2023/matrix.mtx',
+        TEMPDIR / 'SunshineHein2023/features.tsv.gz',
+        TEMPDIR / 'SunshineHein2023/barcodes.tsv.gz',
+        TEMPDIR / 'SunshineHein2023/cell_identities.csv'
     output: DATADIR / 'SunshineHein2023.h5ad'
     resources:
         partititon='short',
@@ -23,7 +27,10 @@ rule SunshineHein2023:
 
 rule SunshineHein2023_download:
     output:
-        TEMPDIR / 'SunshineHein2023/GSE217066_210715_combinatorial.h5ad'
+        temp(TEMPDIR / 'SunshineHein2023/matrix.mtx'),
+        temp(TEMPDIR / 'SunshineHein2023/features.tsv.gz'),
+        temp(TEMPDIR / 'SunshineHein2023/barcodes.tsv.gz'),
+        temp(TEMPDIR / 'SunshineHein2023/cell_identities.csv')
     resources:
         partititon='short',
         time='04:00:00',

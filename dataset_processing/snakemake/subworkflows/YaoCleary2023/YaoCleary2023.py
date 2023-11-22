@@ -6,14 +6,14 @@ from tqdm import tqdm
 from pathlib import Path
 
 # Custom functions
-sys.path.insert(1, '../')
-from utils import *
+sys.path.insert(1, '../../')
+from utils import annotate_qc, assert_annotations
 
 TEMPDIR = Path(snakemake.config['TEMPDIR']) 
 
 def process_adata(key):
     # build adata
-    adata = sc.read(TEMPDIR / f'YaoCleary2023/{key}.h5ad')
+    adata = sc.read(TEMPDIR / f'YaoCleary2023/{key}_temp.h5ad')
     adata.obs = adata.obs.rename({'Total_RNA_count': 'ncounts', 'Total_unique_genes': 'ngenes', 'Biological_replicate': 'replicate',
                       'Percent_mitochondrial_reads': 'percent_mito', 'Guides': 'full_guides', 
                       'Guides_collapsed_by_gene': 'guides', 'Total_number_of_guides': 'nguides'}, axis=1)
@@ -47,8 +47,8 @@ def process_adata(key):
 adatas = {}
 for key in ['GSM6858447_KO_conventional', 'GSM6858449_KD_conventional', 'GSM6858448_KO_cell_pooled', 'GSM6858450_KD_guide_pooled']:
     print(key)
-    adata = process_adata(key='GSM6858449_KD_conventional')
+    adata = process_adata(key=key)
     assert_annotations(adata)
     adatas[key] = adata
 adata = sc.concat(adatas, label='dataset')
-adata.write(snakemake.output[0])
+adata.write(snakemake.output[0], compression='gzip')

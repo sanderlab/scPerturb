@@ -11,10 +11,44 @@ configfile: "../../configuration/config.yaml"
 DATADIR = Path(config['DOWNDIR'])  # place to store data
 TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
 
+files = [
+    'GSM7056148_sciPlexGxE_1_cell.annotations.txt',
+    'GSM7056148_sciPlexGxE_1_gene.annotations.txt',
+    'GSM7056148_sciPlexGxE_1_hash_sample_sheet.txt',
+    'GSM7056148_sciPlexGxE_1_hashTable.out.txt',
+    'GSM7056148_sciPlexGxE_1_preprocessed_cds.rds',
+    'GSM7056148_sciPlexGxE_1_sgRNA_sequences.txt',
+    'GSM7056148_sciPlexGxE_1_sgRNATable_out.rds',
+    'GSM7056148_sciPlexGxE_1_UMI.count.matrix',
+    'GSM7056149_sciPlexGxE_2_cell.annotations.txt',
+    'GSM7056149_sciPlexGxE_2_gene.annotations.txt',
+    'GSM7056149_sciPlexGxE_2_gRNASampleSheet.txt',
+    'GSM7056149_sciPlexGxE_2_gRNA_sequences.txt',
+    'GSM7056149_sciPlexGxE_2_gRNATable_reads.out.txt',
+    'GSM7056149_sciPlexGxE_2_hash_sample_sheet.txt',
+    'GSM7056149_sciPlexGxE_2_hashTable.out.txt',
+    'GSM7056149_sciPlexGxE_2_hash_whitelist_rep1.txt',
+    'GSM7056149_sciPlexGxE_2_hash_whitelist_rep2.txt',
+    'GSM7056149_sciPlexGxE_2_preprocessed_cds.list.RDS',
+    'GSM7056149_sciPlexGxE_2_UMI.count.matrix',
+    'GSM7056150_sciPlex_3_cell.annotations.txt',
+    'GSM7056150_sciPlex_3_gene.annotations.txt',
+    'GSM7056150_sciPlex_3_hash_sample_sheet.txt',
+    'GSM7056150_sciPlex_3_hashTable.out.txt',
+    'GSM7056150_sciPlex_3_preprocessed_cds.list.rds',
+    'GSM7056150_sciPlex_3_UMI.count.matrix',
+    'GSM7056151_sciPlex_4_cell.annotations.txt',
+    'GSM7056151_sciPlex_4_gene.annotations.txt',
+    'GSM7056151_sciPlex_4_hash_sample_sheet.txt',
+    'GSM7056151_sciPlex_4_hashTable.out.txt',
+    'GSM7056151_sciPlex_4_preprocessed_cds.list.rds',
+    'GSM7056151_sciPlex_4_UMI.count.matrix'
+]
+
 ### RULES ###
 rule McFalineTrapnell2023_download:
     output:
-        TEMPDIR / 'McFalineTrapnell2023/downloaded.flag'
+        temp(expand(TEMPDIR / 'McFalineTrapnell2023/{file}', file=files))
     resources:
         partititon='short',
         time='04:00:00',
@@ -26,12 +60,39 @@ rule McFalineTrapnell2023_download:
         wget -O GSE225775_RAW.tar 'http://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE225775&format=file'
         tar -xvf GSE225775_RAW.tar
         rm GSE225775_RAW.tar
+        gunzip *.gz
         touch {output}
         """
 
-rule McFalineTrapnell2023:
-    input: TEMPDIR / 'McFalineTrapnell2023/downloaded.flag'
+rule McFalineTrapnell2023_convert:
+    input:
+        cells = TEMPDIR / 'McFalineTrapnell2023/{prefix}_cell.annotations.txt',
+        genes = TEMPDIR / 'McFalineTrapnell2023/{prefix}_gene.annotations.txt',
+        counts = TEMPDIR / 'McFalineTrapnell2023/{prefix}_UMI.count.matrix'
     output:
+        temp(TEMPDIR / 'McFalineTrapnell2023/{prefix}_temp.h5ad')
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    run:
+        import pandas as pd
+        import scanpy as sc
+        from scipy.sparse import csr_matrix
+        obs = pd.read_csv(input['cells'], sep='\t', index_col=0, header=None, names=['cell_barcode', 'orig_ident'])
+        var = pd.read_csv(input['genes'], sep='\t', index_col=1, header=None, names=['gene_id', 'gene_symbol'], )
+        tab = pd.read_csv(input['counts'], sep='\t', header=None, names=['gene', 'cell', 'value'])
+        X = csr_matrix((tab.value, (tab.cell-1, tab.gene-1)), shape=(len(obs), len(var)))
+        adata = sc.AnnData(X, obs, var)
+        adata.write(output[0], compression='gzip')
+
+rule McFalineTrapnell2023_process:
+    input:
+        adata = TEMPDIR / 'McFalineTrapnell2023/{prefix}_temp.h5ad',
+        hashtable = TEMPDIR / 'McFalineTrapnell2023/{prefix}_hashTable.out.txt'
+    output:
+        temp(TEMPDIR / 'McFalineTrapnell2023/McFalineTrapnell2023_{prefix}.h5ad')
     resources:
         partititon='short',
         time='04:00:00',
@@ -39,3 +100,12 @@ rule McFalineTrapnell2023:
         disk_mb=128000
     script:
         'McFalineTrapnell2023.py'
+
+rule McFalineTrapnell2023:
+    input:
+        expand(TEMPDIR / 'McFalineTrapnell2023/McFalineTrapnell2023_{prefix}.h5ad', prefix=['GSM7056148_sciPlexGxE_1', 'GSM7056149_sciPlexGxE_2', 'GSM7056150_sciPlex_3', 'GSM7056151_sciPlex_4'])
+    output:
+        expand(DATADIR / 'McFalineTrapnell2023_{prefix}.h5ad', prefix=['GSM7056148_sciPlexGxE_1', 'GSM7056149_sciPlexGxE_2', 'GSM7056150_sciPlex_3', 'GSM7056151_sciPlex_4'])
+    run:
+        for i, o in zip(input, output):
+            shell(f'cp {i} {o}')

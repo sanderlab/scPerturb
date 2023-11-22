@@ -34,4 +34,4 @@ adata.var.index.name = 'gene_symbol'
 annotate_qc(adata, species='mouse')
 assert_annotations(adata)
 
-adata.write(snakemake.output[0])
+adata.write(snakemake.output[0], compression='gzip')
