@@ -1,0 +1,44 @@
+"""
+Author: Stefan Peidli
+Date: 23.11.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+# ### RULES ###
+rule WesselsSatija2023:
+    input:
+        TEMPDIR / 'WesselsSatija2023/download.flag'
+    output: DATADIR / 'WesselsSatija2023.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script: 'WesselsSatija2023.py'
+
+rule WesselsSatija2023_download:
+    output:
+        TEMPDIR / 'WesselsSatija2023/download.flag'
+    resources:
+        partititon='short',
+        time='01:00:00',
+        mem_mb=8000,
+        disk_mb=8000
+    shell:
+        """
+        cd {TEMPDIR}/WesselsSatija2023
+        wget --recursive --no-parent -nd -R "index.html*" ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE213nnn/GSE213957/suppl/
+        tar -xzvf GSE213957_HEX293FT_and_SpeciesMixing_CaRPool-seq.tar.gz
+        tar -xzvf GSE213957_THP1-CaRPool-seq_and_GSE213957_HEX293FTstabRNA.tar.gz
+        tar -xzvf GSE213957_Perturb-seq.tar.gz
+        rm *.tar.gz
+        gunzip *.gz
+        touch {output}
+        """

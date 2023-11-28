@@ -70,4 +70,4 @@ rule YaoCleary2023:
         time='04:00:00',
         mem_mb=128000,
         disk_mb=128000
-    script: "python YaoCleary2023.py"
+    script: "YaoCleary2023.py"

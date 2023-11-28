@@ -17,7 +17,8 @@ def process_adata(key):
     adata.obs = adata.obs.rename({'Total_RNA_count': 'ncounts', 'Total_unique_genes': 'ngenes', 'Biological_replicate': 'replicate',
                       'Percent_mitochondrial_reads': 'percent_mito', 'Guides': 'full_guides', 
                       'Guides_collapsed_by_gene': 'guides', 'Total_number_of_guides': 'nguides'}, axis=1)
-    adata.var = adata.var.set_index('features').drop('_index', axis=1)
+    adata.var.index.name = 'gene_symbol'
+    # adata.var = adata.var.set_index('features').drop('_index', axis=1)
     # h5py does not support sparse matrices yet...
     # tab = pd.read_csv(TEMPDIR / f'YaoCleary2023/{key}_perturbations.txt', sep='\t').T
     # stab = tab.astype(pd.SparseDtype("int", 0))  # make sparse

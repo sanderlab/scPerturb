@@ -24,6 +24,7 @@ include: "subworkflows/XuCao2023/Snakefile"
 include: "subworkflows/SantinhaPlatt2023/Snakefile"
 include: "subworkflows/LaraAstiasoHuntly2023/Snakefile"
 include: "subworkflows/SunshineHein2023/Snakefile"
+include: "subworkflows/WesselsSatija2023/Snakefile"
 
 
 ### RULES ###
@@ -34,10 +35,11 @@ rule all:
         rules.YaoCleary2023.output,
         rules.QinTape2023.output,  # only scRNA-seq for now, CyTOF maybe later
         rules.SantinhaPlatt2023.output,
-        # rules.McFalineTrapnell2023.output,  # screen 2 too big. OOF???
+        rules.McFalineTrapnell2023.output,  # screen 2 too big. OOF???
         rules.XuCao2023.output,
         rules.LaraAstiasoHuntly2023.output,
-        rules.SunshineHein2023.output
+        rules.SunshineHein2023.output,
+        rules.WesselsSatija2023.output
         # dysfunct
         # rules.WuBassett2023.output,  # obtained from original authors, maybe a copy is still left on my charité mac?
 

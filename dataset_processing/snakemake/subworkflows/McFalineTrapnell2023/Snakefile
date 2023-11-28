@@ -74,17 +74,20 @@ rule McFalineTrapnell2023_convert:
     resources:
         partititon='short',
         time='04:00:00',
-        mem_mb=128000,
+        mem_mb=250000,
         disk_mb=128000
     run:
         import pandas as pd
         import scanpy as sc
+        import numpy as np
         from scipy.sparse import csr_matrix
         obs = pd.read_csv(input['cells'], sep='\t', index_col=0, header=None, names=['cell_barcode', 'orig_ident'])
         var = pd.read_csv(input['genes'], sep='\t', index_col=1, header=None, names=['gene_id', 'gene_symbol'], )
         tab = pd.read_csv(input['counts'], sep='\t', header=None, names=['gene', 'cell', 'value'])
         X = csr_matrix((tab.value, (tab.cell-1, tab.gene-1)), shape=(len(obs), len(var)))
         adata = sc.AnnData(X, obs, var)
+        ncounts = np.ravel(adata.X.sum(1))
+        adata = adata[ncounts >= 500].copy()  # otherwise a bit too large...
         adata.write(output[0], compression='gzip')
 
 rule McFalineTrapnell2023_process:
