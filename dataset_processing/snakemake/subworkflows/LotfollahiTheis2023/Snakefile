@@ -1,0 +1,41 @@
+"""
+Author: Stefan Peidli
+Date: 23.11.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+# ### RULES ###
+rule LotfollahiTheis2023_download:
+    output:
+        TEMPDIR / 'LotfollahiTheis2023/download.flag'
+    resources:
+        partititon='short',
+        time='01:00:00',
+        mem_mb=8000,
+        disk_mb=8000
+    shell:
+        """
+        cd {TEMPDIR}/LotfollahiTheis2023
+        rm -rf *
+        wget --recursive --no-parent -nd -R "index.html*" ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE206nnn/GSE206741/suppl/
+        gunzip *.gz
+        touch {output}
+        """
+
+rule LotfollahiTheis2023:
+    input:
+        rules.LotfollahiTheis2023_download.output
+    output: DATADIR / 'LotfollahiTheis2023.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script: 'LotfollahiTheis2023.py'

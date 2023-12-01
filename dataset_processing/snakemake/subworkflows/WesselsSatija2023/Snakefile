@@ -12,20 +12,14 @@ DATADIR = Path(config['DOWNDIR'])  # place to store data
 TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
 
 # ### RULES ###
-rule WesselsSatija2023:
-    input:
-        TEMPDIR / 'WesselsSatija2023/download.flag'
-    output: DATADIR / 'WesselsSatija2023.h5ad'
-    resources:
-        partititon='short',
-        time='04:00:00',
-        mem_mb=128000,
-        disk_mb=128000
-    script: 'WesselsSatija2023.py'
-
 rule WesselsSatija2023_download:
     output:
-        TEMPDIR / 'WesselsSatija2023/download.flag'
+        TEMPDIR / 'WesselsSatija2023/GSE213957_THP1-CaRPool-seq.metadata.tsv',
+        expand(TEMPDIR / 'WesselsSatija2023/THP1-CaRPool-seq_and_HEK293FTstabRNA.{types}{N}.{feature}', 
+               feature=['barcodes.tsv', 'features.tsv', 'matrix.mtx'],
+               types=['ADT', 'GEXGDO', 'HTO'],
+               N=[1, 2, 3, 4]
+               )
     resources:
         partititon='short',
         time='01:00:00',
@@ -34,11 +28,24 @@ rule WesselsSatija2023_download:
     shell:
         """
         cd {TEMPDIR}/WesselsSatija2023
-        wget --recursive --no-parent -nd -R "index.html*" ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE213nnn/GSE213957/suppl/
-        tar -xzvf GSE213957_HEX293FT_and_SpeciesMixing_CaRPool-seq.tar.gz
+        rm -rf *
+        # wget --recursive --no-parent -nd -R "index.html*" ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE213nnn/GSE213957/suppl/
+        wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE213nnn/GSE213957/suppl/GSE213957%5FTHP1%2DCaRPool%2Dseq.metadata.tsv.gz
+        wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE213nnn/GSE213957/suppl/GSE213957%5FTHP1%2DCaRPool%2Dseq%5Fand%5FGSE213957%5FHEX293FTstabRNA.tar.gz
         tar -xzvf GSE213957_THP1-CaRPool-seq_and_GSE213957_HEX293FTstabRNA.tar.gz
-        tar -xzvf GSE213957_Perturb-seq.tar.gz
-        rm *.tar.gz
+        rm GSE213957_THP1-CaRPool-seq_and_GSE213957_HEX293FTstabRNA.tar.gz
+        rm *.feature_ref.*
         gunzip *.gz
-        touch {output}
         """
+
+
+rule WesselsSatija2023:
+    input:
+        rules.WesselsSatija2023_download.output
+    output: DATADIR / 'WesselsSatija2023.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script: 'WesselsSatija2023.py'

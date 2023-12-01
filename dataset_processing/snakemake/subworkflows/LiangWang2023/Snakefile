@@ -1,0 +1,67 @@
+"""
+Author: Stefan Peidli
+Date: 23.11.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+# ### RULES ###
+rule LiangWang2023_download:
+    output:
+        temp(directory(TEMPDIR / 'LiangWang2023/Wangxiaoyue-lab-OSCAR-d5880d4/')),
+        TEMPDIR / 'LiangWang2023/OSCAR_metadata.csv'
+    resources:
+        partititon='short',
+        time='01:00:00',
+        mem_mb=8000,
+        disk_mb=8000
+    shell:
+        """
+        cd {TEMPDIR}/LiangWang2023
+        rm -rf *
+        wget https://zenodo.org/records/8385065/files/Wangxiaoyue-lab/OSCAR-Source_code.zip
+        unzip OSCAR-Source_code.zip
+        rm OSCAR-Source_code.zip
+        mv Wangxiaoyue-lab-OSCAR-d5880d4/data/2\ OSCAR/OSCAR_metadata.csv {TEMPDIR}/LiangWang2023/OSCAR_metadata.csv
+        """
+
+rule LiangWang2023_extract:
+    input:
+        rules.LiangWang2023_download.output
+    output:
+        TEMPDIR / 'LiangWang2023/OSCAR_DM_expression_matrix.csv',
+        TEMPDIR / 'LiangWang2023/OSCAR_EM_expression_matrix.csv'
+    resources:
+        partititon='short',
+        time='01:00:00',
+        mem_mb=8000,
+        disk_mb=8000
+    shell:
+        """
+        cd {TEMPDIR}/LiangWang2023/Wangxiaoyue-lab-OSCAR-d5880d4/data/2\ OSCAR/
+        cat OSCAR_DM_expression_matrix.*.0* > OSCAR_DM_expression_matrix.csv.gz
+        cat OSCAR_EM_expression_matrix.*.0* > OSCAR_EM_expression_matrix.csv.gz
+        gunzip OSCAR_DM_expression_matrix.csv.gz
+        gunzip OSCAR_EM_expression_matrix.csv.gz
+        mv OSCAR_DM_expression_matrix.csv {TEMPDIR}/LiangWang2023/OSCAR_DM_expression_matrix.csv
+        mv OSCAR_EM_expression_matrix.csv {TEMPDIR}/LiangWang2023/OSCAR_EM_expression_matrix.csv
+        """
+
+rule LiangWang2023:
+    input:
+        TEMPDIR / 'LiangWang2023/OSCAR_DM_expression_matrix.csv',
+        TEMPDIR / 'LiangWang2023/OSCAR_EM_expression_matrix.csv',
+        TEMPDIR / 'LiangWang2023/OSCAR_metadata.csv'
+    output: DATADIR / 'LiangWang2023.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=128000
+    script: 'LiangWang2023.py'
