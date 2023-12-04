@@ -1,0 +1,218 @@
+"""
+Author: Stefan Peidli
+Date: 04.12.2023
+Run: snakemake --latency-wait 30
+Description: Produces the datavzrd table for the website
+"""
+
+# Config and Infos
+import pandas as pd
+import numpy as np
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+# Load list of RNA datasets available via scPerturb
+tab = pd.read_csv('scperturb_dataset_info_datavzrd.csv', index_col=3)
+df_rna = tab[tab['Modality'].isin(['RNA', 'RNA + protein (RNA)'])]
+datasets_rna = list(df_rna.index)
+print('Selected RNA datasets:', datasets_rna)
+
+# Load list of ATAC datasets available via scPerturb
+df_atac = tab[tab['Modality'].isin(['ATAC', 'ATAC + protein'])]
+datasets_atac = list(df_atac.index)
+print('Selected ATAC datasets:', datasets_atac)
+
+
+### PATHS ###
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+### RULES ###
+rule all:
+    input:
+		# Website
+        'scPerturb_vzrd_v2',
+		# Data
+        expand(TEMPDIR / 'prepared/tmp_ATAC_data_{dataset}_feature_{feature}.h5', 
+        feature=['ChromVar', 'LSI_embedding', 'gene_scores', 'peak_bc'], 
+        dataset=datasets_atac),
+        expand(TEMPDIR / '{dataset}.h5ad', dataset=datasets_rna),
+		# Summaries
+		TEMPDIR / 'obs_tables.csv',
+		TEMPDIR / 'obs_tables_summary.csv',
+
+rule zenodo_download:
+	"Downloads all RNA datasets of scperturb from zenodo via wget."
+	output: TEMPDIR / '{dataset}.h5ad'
+	resources:
+		partititon='short',
+		time='4:00:00',
+		mem_mb=4000,
+		disk_mb=4000
+	params:
+		sleeptime=np.random.uniform(1,20),
+		zenodo_url=config["ZENODO_RNA_URL"]
+	shell:
+		'''
+		sleep {params.sleeptime}
+		wget {params.zenodo_url}/files/{wildcards.dataset}.h5ad -O {output}
+		'''
+
+rule zenodo_download_atac:
+	"Downloads all ATAC datasets of scperturb from zenodo via wget."
+	output: TEMPDIR / '{dataset}.zip'
+	resources:
+		partititon='short',
+		time='4:00:00',
+		mem_mb=4000,
+		disk_mb=4000
+	params:
+		sleeptime=np.random.uniform(1,20),
+		zenodo_url=config["ZENODO_ATAC_URL"]
+	shell:
+		'''
+		sleep {params.sleeptime}
+		wget {params.zenodo_url}/files/{wildcards.dataset}.zip -O {output}
+		'''
+
+rule extract_atac:
+	"Downloads all ATAC datasets of scperturb from zenodo via wget."
+	input: TEMPDIR / '{dataset}.zip'
+	output: 
+		expand(TEMPDIR / '{{dataset}}/{feature}/{filetype}', 
+		feature=['ChromVar', 'LSI_embedding', 'gene_scores', 'markerpeak_target', 'peak_bc'],
+		filetype=['counts.mtx.gz', 'obs.csv', 'var.csv'])
+	resources:
+		partititon='short',
+		time='4:00:00',
+		mem_mb=4000,
+		disk_mb=4000
+	params:
+		sleeptime=np.random.uniform(1,20),
+		zenodo_url=config["ZENODO_ATAC_URL"]
+	shell:
+		'''
+		cd {TEMPDIR}
+		unzip {wildcards.dataset}.zip
+		rm {wildcards.dataset}.zip
+		'''
+
+rule prepare_atac:
+	"Prepares scperturb ATAC datasets:"
+	input: 
+		expand(TEMPDIR / '{{dataset}}/{{feature}}/{filetype}', 
+		filetype=['counts.mtx.gz', 'obs.csv', 'var.csv'])
+	output: TEMPDIR / 'prepared/tmp_ATAC_data_{dataset}_feature_{feature}.h5'
+	resources:
+		partititon='short',
+		time='0-04:00:00',
+		mem_mb=64000,
+		disk_mb=64000
+	script: '../../revision/snakemake/scripts/snake_prepare_atac.py'
+
+rule prepare_data:
+	"""Prepares scperturb RNA datasets:
+	- Filtering (Cells: min_counts=1000, Genes: min_cells=50)
+	- Normalization
+	- Log1p trafo
+	- Removes perturbations with less than 200 cells, then
+	- Subsamples each perturbation to the smallest 
+	  number of cells such that each perturbation has at least that many cells
+	- Precomputes 2000 HVGs, PCA
+	- Adds a convenience annotation, randomly splitting each perturbation in two groups artificially
+	  E.g. 50 EGFRi cells --> 25 EGFRi cells + 25 EGFRi_X cells.
+  	"""
+	input: TEMPDIR / '{dataset}.h5ad'
+	output: TEMPDIR / 'prepared/tmp_data_{dataset}.h5'
+	resources:
+		partititon=lambda wildcards: 'highmem' if 'Replogle' in wildcards.dataset else 'medium',
+		time='0-18:00:00',
+		mem_mb=lambda wildcards: 250000 if 'Replogle' in wildcards.dataset else 64000,
+		disk_mb=lambda wildcards: 250000 if 'Replogle' in wildcards.dataset else 64000
+	params:
+		min_counts=1000,  # for cell filtering
+		min_cells=50,  # for gene filtering
+		min_perturb_size=200,  # exclude perturbations with less cells
+		n_pcs=50,  # number of PCs to compute and use
+		n_hvgs=2000  # number of HVGs for PCA
+	script: "../../revision/snakemake/scripts/snake_prepare_data.py"
+
+rule extract_info:
+	"Extracts the obs table from the prepared data."
+	input: TEMPDIR / 'prepared/tmp_data_{dataset}.h5'
+	output: 
+		TEMPDIR / 'obs/obs_{dataset}_tables.csv',
+		TEMPDIR / 'obs/obs_{dataset}_tables_summary.csv'
+	resources:
+		partititon='short',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		import scanpy as sc
+		adata = sc.read_h5ad(input[0])
+		adata.obs['dataset'] = wildcards.dataset
+		adata.obs.to_csv(output[0])
+
+		# also compute summary
+		df_summary = pd.Series(index=[])
+		df_summary['dataset'] = wildcards.dataset
+		df_summary['n_cells'] = df.shape[0]
+		df_summary['n_perturbations'] = df['perturbation'].nunique() - 1
+		df_summary['n_genes'] = df['ngenes'].median()
+		df_summary['n_counts'] = df['ncounts'].median()
+		df_summary['n_maxperts'] = df['nperts'].max()
+		df_summary['n_cells_per_perturbation'] = df['perturbation'].value_counts().median()
+		df_summary['n_cells_per_perturbation_min'] = df['perturbation'].value_counts().min()
+		df_summary['n_cells_per_perturbation_max'] = df['perturbation'].value_counts().max()
+		df.summary.to_csv(output[1])
+
+rule merge_obs:
+	"Merges the obs tables from the prepared data."
+	input:
+		expand(TEMPDIR / 'obs/obs_{dataset}_tables.csv', dataset=datasets_rna),
+		expand(TEMPDIR / 'obs/obs_{dataset}_tables_summary.csv', dataset=datasets_rna)
+	output: 
+		TEMPDIR / 'obs_tables.csv',
+		TEMPDIR / 'obs_tables_summary.csv'
+	resources:
+		partititon='short',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	run:
+		import pandas as pd
+		df = pd.concat([pd.read_csv(f, index_col=0) for f in input])
+		df.to_csv(output[0])
+
+		df = pd.concat([pd.read_csv(f, index_col=0) for f in input])
+		df.to_csv(output[1])
+
+rule compute_edistance_to_control:
+	"""
+	Computes the E-distance of all perturbations to control cells.
+  	"""
+	input: TEMPDIR / 'prepared/tmp_data_{dataset}.h5'
+	output: 'tables/edist_to_control_{dataset}_tables.csv'
+	resources:
+		partititon='short',
+		time='4:00:00',
+		mem_mb=168000,
+		disk_mb=168000
+	script: '../../revision/snakemake/scripts/snake_compute_edistance_to_control.py'
+
+rule datavzrd:
+	"""
+	Computes the E-distance of all perturbations to control cells.
+  	"""
+	input: 'datavzrd_config.yaml'
+	output: directory('scPerturb_vzrd_v2')
+	resources:
+		partititon='short',
+		time='0:30:00',
+		mem_mb=1000,
+		disk_mb=1000
+	shell: 
+		'''
+		datavzrd {input} --output {output}
+		echo "DONE!"
+		'''

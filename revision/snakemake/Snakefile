@@ -200,9 +200,6 @@ rule prepare_data:
 		n_pcs=50,  # number of PCs to compute and use
 		n_hvgs=2000  # number of HVGs for PCA
 	script: "scripts/snake_prepare_data.py"
-		
-	
-
 
 rule compute_estatistics:
 	"Computes E-test between each perturbation and 'control' cells."

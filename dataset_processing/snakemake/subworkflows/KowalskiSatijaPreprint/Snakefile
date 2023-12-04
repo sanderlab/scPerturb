@@ -1,0 +1,59 @@
+"""
+Author: Stefan Peidli
+Date: 23.11.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+# ### RULES ###
+rule KowalskiSatijaPreprint_download:
+    output:
+        TEMPDIR / 'KowalskiSatijaPreprint/CPA_HEK293FT.Rds',
+        TEMPDIR / 'KowalskiSatijaPreprint/CPA_K562.Rds'
+    resources:
+        partititon='short',
+        time='01:00:00',
+        mem_mb=8000,
+        disk_mb=8000
+    shell:
+        """
+        cd {TEMPDIR}/KowalskiSatijaPreprint
+        rm -rf *
+        wget https://zenodo.org/records/7619593/files/CPA_HEK293FT.Rds
+        wget https://zenodo.org/records/7619593/files/CPA_K562.Rds
+        """
+
+rule KowalskiSatijaPreprint_extract:
+    input:
+        TEMPDIR / 'KowalskiSatijaPreprint/{name}.Rds'
+    output:
+        TEMPDIR / 'KowalskiSatijaPreprint/{name}_temp.h5ad'
+    conda: 'r_env' # '../../../../environments/r_env.yaml'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=64000
+    shell:
+        """
+        # Requires that PASTA is installed with R!
+        Rscript ../utils/extract.R -f {input} -n {wildcards.name} -o $(dirname {output[0]})
+        python ../utils/merge_from_extract.py -i $(dirname {input[0]}) -o {output} -n {wildcards.name}
+        """
+
+rule KowalskiSatijaPreprint:
+    input:
+        expand(TEMPDIR / 'KowalskiSatijaPreprint/{name}_temp.h5ad', name=['CPA_HEK293FT', 'CPA_K562'])
+    output: DATADIR / 'KowalskiSatijaPreprint.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=128000,
+        disk_mb=64000
+    script: 'KowalskiSatijaPreprint.py'

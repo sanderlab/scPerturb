@@ -53,8 +53,8 @@ write.csv(colnames(seurat_data), paste0(target, "_barcodes.csv"))
 write.csv(metadata, paste0(target, "_metadata.csv"))
 # Embeddings
 for (embedding in names(seurat_data@reductions)) {
-  df <- seurat_data@reductions[[embedding]][[]]
-  write.csv(df, paste0(target, "_", embedding, ".csv"))
+  try(df <- seurat_data@reductions[[embedding]][[]])
+  try(write.csv(df, paste0(target, "_", embedding, ".csv")))
 }
 
 print("Finished extraction from rds file.")

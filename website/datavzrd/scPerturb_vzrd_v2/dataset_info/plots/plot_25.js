@@ -1,0 +1,1 @@
+let show_plot_25=false;let plot_25={"$schema":"https://vega.github.io/schema/vega-lite/v4.json","width":"container","layer":[{"data":{"values":null},"mark":"bar","encoding":{"x":{"field":"key","sort":{"field":"value","order":"descending"},"title":"ngenes"},"y":{"field":"value","type":"quantitative","title":null}}}]}
