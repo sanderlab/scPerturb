@@ -1,7 +1,8 @@
 name: scPerturb dataset info
 datasets:
   dataset_info:
-    path: "scperturb_dataset_info_datavzrd.csv"
+    path: "scperturb_dataset_info_datavzrd_annotated.csv"
+    offer-excel: true
 default-view: dataset_info
 views:
   dataset_info:
@@ -25,7 +26,7 @@ views:
         File Extension:
           display-mode: hidden
         Title:
-          link-to-url: 
+          link-to-url:
             doi: 
               url: "{doi_url}"
         Disease:
@@ -64,6 +65,8 @@ views:
                 - "#ff7f0e"
                 - "#bcbd22"
                 - "#d62728"
+        Method:
+          ellipsis: 24
         Cancer:
           plot:
             heatmap:
@@ -74,8 +77,18 @@ views:
               range:
                 - "#2CA02C"
                 - "#D62728"
-        Number Of Perturbations:
-          ellipsis: 5
+        Total Number of Perturbations:
+          precision: 0
+        Total Number of Cells:
+          precision: 0
+        Median Number of Genes Expressed per Cell:
+          precision: 0
+        Median Number of UMI Counts per Cell:
+          precision: 0
+        Highest Number of Perturbations in one Cell:
+          precision: 0
+        Median Number of Cells per Perturbation:
+          precision: 0
         Year:
           plot:
             ticks:

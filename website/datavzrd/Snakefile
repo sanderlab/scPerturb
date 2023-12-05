@@ -12,7 +12,7 @@ from pathlib import Path
 configfile: "../../configuration/config.yaml"
 
 # Load list of RNA datasets available via scPerturb
-tab = pd.read_csv('scperturb_dataset_info_datavzrd.csv', index_col=3)
+tab = pd.read_csv('scperturb_dataset_info_datavzrd.csv', index_col=0)
 df_rna = tab[tab['Modality'].isin(['RNA', 'RNA + protein (RNA)'])]
 datasets_rna = list(df_rna.index)
 print('Selected RNA datasets:', datasets_rna)
@@ -29,16 +29,13 @@ TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
 ### RULES ###
 rule all:
     input:
-		# Website
+        # Website
         'scPerturb_vzrd_v2',
-		# Data
-        expand(TEMPDIR / 'prepared/tmp_ATAC_data_{dataset}_feature_{feature}.h5', 
-        feature=['ChromVar', 'LSI_embedding', 'gene_scores', 'peak_bc'], 
-        dataset=datasets_atac),
+        # Data
+        # expand(TEMPDIR / 'prepared/tmp_ATAC_data_{dataset}_feature_{feature}.h5', 
+        # feature=['ChromVar', 'LSI_embedding', 'gene_scores', 'peak_bc'], 
+        # dataset=datasets_atac),
         expand(TEMPDIR / '{dataset}.h5ad', dataset=datasets_rna),
-		# Summaries
-		TEMPDIR / 'obs_tables.csv',
-		TEMPDIR / 'obs_tables_summary.csv',
 
 rule zenodo_download:
 	"Downloads all RNA datasets of scperturb from zenodo via wget."
@@ -138,20 +135,21 @@ rule prepare_data:
 
 rule extract_info:
 	"Extracts the obs table from the prepared data."
-	input: TEMPDIR / 'prepared/tmp_data_{dataset}.h5'
+	input: TEMPDIR / '{dataset}.h5ad'
 	output: 
 		TEMPDIR / 'obs/obs_{dataset}_tables.csv',
 		TEMPDIR / 'obs/obs_{dataset}_tables_summary.csv'
 	resources:
 		partititon='short',
 		time='4:00:00',
-		mem_mb=168000,
-		disk_mb=168000
+		mem_mb=128000,
+		disk_mb=128000
 	run:
 		import scanpy as sc
 		adata = sc.read_h5ad(input[0])
 		adata.obs['dataset'] = wildcards.dataset
-		adata.obs.to_csv(output[0])
+		df = adata.obs.copy()
+		df.to_csv(output[0])
 
 		# also compute summary
 		df_summary = pd.Series(index=[])
@@ -160,20 +158,19 @@ rule extract_info:
 		df_summary['n_perturbations'] = df['perturbation'].nunique() - 1
 		df_summary['n_genes'] = df['ngenes'].median()
 		df_summary['n_counts'] = df['ncounts'].median()
-		df_summary['n_maxperts'] = df['nperts'].max()
-		df_summary['n_cells_per_perturbation'] = df['perturbation'].value_counts().median()
-		df_summary['n_cells_per_perturbation_min'] = df['perturbation'].value_counts().min()
-		df_summary['n_cells_per_perturbation_max'] = df['perturbation'].value_counts().max()
-		df.summary.to_csv(output[1])
+		df_summary['n_maxperts'] = df['nperts'].dropna().astype(int).max()
+		df_summary['n_cells_per_perturbation'] = df['perturbation'].astype(str).value_counts().median()
+		df_summary['n_cells_per_perturbation_min'] = df['perturbation'].astype(str).value_counts().min()
+		df_summary['n_cells_per_perturbation_max'] = df['perturbation'].astype(str).value_counts().max()
+		df_summary.to_csv(output[1])
 
 rule merge_obs:
 	"Merges the obs tables from the prepared data."
 	input:
-		expand(TEMPDIR / 'obs/obs_{dataset}_tables.csv', dataset=datasets_rna),
 		expand(TEMPDIR / 'obs/obs_{dataset}_tables_summary.csv', dataset=datasets_rna)
+		# expand(TEMPDIR / 'obs/obs_{dataset}_tables.csv', dataset=datasets_rna),
 	output: 
-		TEMPDIR / 'obs_tables.csv',
-		TEMPDIR / 'obs_tables_summary.csv'
+		TEMPDIR / 'obs/obs_tables_summary.csv'
 	resources:
 		partititon='short',
 		time='4:00:00',
@@ -181,11 +178,12 @@ rule merge_obs:
 		disk_mb=168000
 	run:
 		import pandas as pd
-		df = pd.concat([pd.read_csv(f, index_col=0) for f in input])
+		tabs = [pd.read_csv(f, index_col=0) for f in input]
+		df = pd.concat(tabs, axis=1).T.set_index('dataset')
 		df.to_csv(output[0])
 
-		df = pd.concat([pd.read_csv(f, index_col=0) for f in input])
-		df.to_csv(output[1])
+		# df = pd.concat([pd.read_csv(f, index_col=0) for f in input], axis=0)
+		# df.to_csv(output[1])
 
 rule compute_edistance_to_control:
 	"""
@@ -200,19 +198,53 @@ rule compute_edistance_to_control:
 		disk_mb=168000
 	script: '../../revision/snakemake/scripts/snake_compute_edistance_to_control.py'
 
+rule annotate_table:
+	"""
+	Takes the table with datasets and annotates them with additional count summaries.
+	"""
+	input: 
+		'scperturb_dataset_info_datavzrd.csv',
+		TEMPDIR / 'obs/obs_tables_summary.csv'
+	output: 
+		'scperturb_dataset_info_datavzrd_annotated.csv'
+	resources:
+		partititon='short',
+		time='0:30:00',
+		mem_mb=4000,
+		disk_mb=4000
+	run:
+		info = pd.read_csv(input[0], index_col=0)
+		obs_summary = pd.read_csv(input[1], index_col=0)
+		annotated_info = pd.concat([info, obs_summary], axis=1)
+		annotated_info = annotated_info.rename({
+			'n_cells': 'Total Number of Cells',
+			'n_perturbations': 'Total Number of Perturbations',
+			'n_genes': 'Median Number of Genes Expressed per Cell',
+			'n_counts': 'Median Number of UMI Counts per Cell',
+			'n_maxperts': 'Highest Number of Perturbations in one Cell',
+			'n_cells_per_perturbation': 'Median Number of Cells per Perturbation',
+			'n_cells_per_perturbation_min': 'Smallest Number of Cells per Perturbation',
+			'n_cells_per_perturbation_max': 'Highest Number of Cells per Perturbation'
+		}, axis=1)
+		annotated_info.index.name = 'Full index'
+		annotated_info = annotated_info.sort_index()
+		annotated_info.to_csv(output[0])
+
 rule datavzrd:
 	"""
 	Computes the E-distance of all perturbations to control cells.
   	"""
-	input: 'datavzrd_config.yaml'
+	input: 
+		config='datavzrd_config.yaml',
+		data='scperturb_dataset_info_datavzrd_annotated.csv'
 	output: directory('scPerturb_vzrd_v2')
 	resources:
 		partititon='short',
 		time='0:30:00',
-		mem_mb=1000,
-		disk_mb=1000
+		mem_mb=4000,
+		disk_mb=4000
 	shell: 
 		'''
-		datavzrd {input} --output {output}
+		datavzrd {input.config} --output {output}
 		echo "DONE!"
 		'''

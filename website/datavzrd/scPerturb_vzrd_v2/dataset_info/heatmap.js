@@ -384,44 +384,6 @@ const heatmap_plot = {
                     "x": {
                         "field": "dummy",
                         "axis": {
-                            "labelExpr": "'Number Of Perturbations'",
-                            "labelAngle": -90,
-                            "labelOffset": 7,
-                            "title": null,
-                            "ticks": false,
-                            "orient": "top",
-                            "domain": false
-                        }
-                    },
-                    "y": {
-                        "field": "index",
-                        "type": "ordinal",
-                        "axis": null,
-                    },
-                    "text": {
-                        "field": "Number Of Perturbations",
-                        "type": "nominal",
-                        "title": "Number Of Perturbations",
-                        
-                    }
-                }
-            }
-            
-        ]},
-        
-        {
-            
-            "layer": [
-            
-            {
-                "mark": {
-                    "type": "text",
-                    "align":"left"
-                },
-                "encoding": {
-                    "x": {
-                        "field": "dummy",
-                        "axis": {
                             "labelExpr": "'Perturbation'",
                             "labelAngle": -90,
                             "labelOffset": 7,
@@ -698,7 +660,7 @@ const heatmap_plot = {
                     "x": {
                         "field": "dummy",
                         "axis": {
-                            "labelExpr": "'ncells'",
+                            "labelExpr": "'Total Number of Cells'",
                             "labelAngle": -90,
                             "labelOffset": 7,
                             "title": null,
@@ -713,9 +675,9 @@ const heatmap_plot = {
                         "axis": null,
                     },
                     "text": {
-                        "field": "ncells",
-                        "type": "nominal",
-                        "title": "ncells",
+                        "field": "Total Number of Cells",
+                        "type": "quantitative",
+                        "title": "Total Number of Cells",
                         
                     }
                 }
@@ -736,7 +698,7 @@ const heatmap_plot = {
                     "x": {
                         "field": "dummy",
                         "axis": {
-                            "labelExpr": "'ngenes'",
+                            "labelExpr": "'Total Number of Perturbations'",
                             "labelAngle": -90,
                             "labelOffset": 7,
                             "title": null,
@@ -751,9 +713,237 @@ const heatmap_plot = {
                         "axis": null,
                     },
                     "text": {
-                        "field": "ngenes",
-                        "type": "nominal",
-                        "title": "ngenes",
+                        "field": "Total Number of Perturbations",
+                        "type": "quantitative",
+                        "title": "Total Number of Perturbations",
+                        
+                    }
+                }
+            }
+            
+        ]},
+        
+        {
+            
+            "layer": [
+            
+            {
+                "mark": {
+                    "type": "text",
+                    "align":"left"
+                },
+                "encoding": {
+                    "x": {
+                        "field": "dummy",
+                        "axis": {
+                            "labelExpr": "'Median Number of Genes Expressed per Cell'",
+                            "labelAngle": -90,
+                            "labelOffset": 7,
+                            "title": null,
+                            "ticks": false,
+                            "orient": "top",
+                            "domain": false
+                        }
+                    },
+                    "y": {
+                        "field": "index",
+                        "type": "ordinal",
+                        "axis": null,
+                    },
+                    "text": {
+                        "field": "Median Number of Genes Expressed per Cell",
+                        "type": "quantitative",
+                        "title": "Median Number of Genes Expressed per Cell",
+                        
+                    }
+                }
+            }
+            
+        ]},
+        
+        {
+            
+            "layer": [
+            
+            {
+                "mark": {
+                    "type": "text",
+                    "align":"left"
+                },
+                "encoding": {
+                    "x": {
+                        "field": "dummy",
+                        "axis": {
+                            "labelExpr": "'Median Number of UMI Counts per Cell'",
+                            "labelAngle": -90,
+                            "labelOffset": 7,
+                            "title": null,
+                            "ticks": false,
+                            "orient": "top",
+                            "domain": false
+                        }
+                    },
+                    "y": {
+                        "field": "index",
+                        "type": "ordinal",
+                        "axis": null,
+                    },
+                    "text": {
+                        "field": "Median Number of UMI Counts per Cell",
+                        "type": "quantitative",
+                        "title": "Median Number of UMI Counts per Cell",
+                        
+                    }
+                }
+            }
+            
+        ]},
+        
+        {
+            
+            "layer": [
+            
+            {
+                "mark": {
+                    "type": "text",
+                    "align":"left"
+                },
+                "encoding": {
+                    "x": {
+                        "field": "dummy",
+                        "axis": {
+                            "labelExpr": "'Highest Number of Perturbations in one Cell'",
+                            "labelAngle": -90,
+                            "labelOffset": 7,
+                            "title": null,
+                            "ticks": false,
+                            "orient": "top",
+                            "domain": false
+                        }
+                    },
+                    "y": {
+                        "field": "index",
+                        "type": "ordinal",
+                        "axis": null,
+                    },
+                    "text": {
+                        "field": "Highest Number of Perturbations in one Cell",
+                        "type": "quantitative",
+                        "title": "Highest Number of Perturbations in one Cell",
+                        
+                    }
+                }
+            }
+            
+        ]},
+        
+        {
+            
+            "layer": [
+            
+            {
+                "mark": {
+                    "type": "text",
+                    "align":"left"
+                },
+                "encoding": {
+                    "x": {
+                        "field": "dummy",
+                        "axis": {
+                            "labelExpr": "'Median Number of Cells per Perturbation'",
+                            "labelAngle": -90,
+                            "labelOffset": 7,
+                            "title": null,
+                            "ticks": false,
+                            "orient": "top",
+                            "domain": false
+                        }
+                    },
+                    "y": {
+                        "field": "index",
+                        "type": "ordinal",
+                        "axis": null,
+                    },
+                    "text": {
+                        "field": "Median Number of Cells per Perturbation",
+                        "type": "quantitative",
+                        "title": "Median Number of Cells per Perturbation",
+                        
+                    }
+                }
+            }
+            
+        ]},
+        
+        {
+            
+            "layer": [
+            
+            {
+                "mark": {
+                    "type": "text",
+                    "align":"left"
+                },
+                "encoding": {
+                    "x": {
+                        "field": "dummy",
+                        "axis": {
+                            "labelExpr": "'Smallest Number of Cells per Perturbation'",
+                            "labelAngle": -90,
+                            "labelOffset": 7,
+                            "title": null,
+                            "ticks": false,
+                            "orient": "top",
+                            "domain": false
+                        }
+                    },
+                    "y": {
+                        "field": "index",
+                        "type": "ordinal",
+                        "axis": null,
+                    },
+                    "text": {
+                        "field": "Smallest Number of Cells per Perturbation",
+                        "type": "quantitative",
+                        "title": "Smallest Number of Cells per Perturbation",
+                        
+                    }
+                }
+            }
+            
+        ]},
+        
+        {
+            
+            "layer": [
+            
+            {
+                "mark": {
+                    "type": "text",
+                    "align":"left"
+                },
+                "encoding": {
+                    "x": {
+                        "field": "dummy",
+                        "axis": {
+                            "labelExpr": "'Highest Number of Cells per Perturbation'",
+                            "labelAngle": -90,
+                            "labelOffset": 7,
+                            "title": null,
+                            "ticks": false,
+                            "orient": "top",
+                            "domain": false
+                        }
+                    },
+                    "y": {
+                        "field": "index",
+                        "type": "ordinal",
+                        "axis": null,
+                    },
+                    "text": {
+                        "field": "Highest Number of Cells per Perturbation",
+                        "type": "quantitative",
+                        "title": "Highest Number of Cells per Perturbation",
                         
                     }
                 }
