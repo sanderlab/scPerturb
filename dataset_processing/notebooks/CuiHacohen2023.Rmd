@@ -1,0 +1,36 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+library(Seurat)
+```
+
+
+```{r}
+data = Seurat::ReadMtx('/scratch/peidli/scPerturb/CuiHacohen2023/cytokine-samples17-matrix.mtx', '/scratch/peidli/scPerturb/CuiHacohen2023/cytokine-samples17-barcodes.tsv', '/scratch/peidli/scPerturb/CuiHacohen2023/cytokine-samples17-features.tsv', strip.suffix=T)
+tags = Seurat::ReadMtx('/scratch/peidli/scPerturb/CuiHacohen2023/cytokine-hashtags17-matrix.mtx', '/scratch/peidli/scPerturb/CuiHacohen2023/cytokine-hashtags17-barcodes.tsv', '/scratch/peidli/scPerturb/CuiHacohen2023/cytokine-hashtags17-features.tsv', feature.column=1)
+```
+```{r}
+joint.bcs <- intersect(colnames(data), colnames(tags))
+print(length(joint.bcs))
+data <- data[, joint.bcs]
+tags <- tags[, joint.bcs]
+tags <- tags[rowSums(tags) > 10000,] # Remove tags with <10k hashtag counts
+rowSums(tags)
+```
+
+```{r}
+# Create Seurat object and demultiplex
+seurat_object <- Seurat::CreateSeuratObject(counts = data)
+seurat_object[["HTO"]] <- Seurat::CreateAssayObject(counts = tags)
+```
+
+
+```{r}
+seurat_object <- Seurat::NormalizeData(seurat_object, assay = "HTO", normalization.method = "CLR")
+seurat_object <- Seurat::MULTIseqDemux(seurat_object, assay = "HTO")
+```
+
+
+

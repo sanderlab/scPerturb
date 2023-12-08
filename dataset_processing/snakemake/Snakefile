@@ -27,7 +27,8 @@ include: "subworkflows/SunshineHein2023/Snakefile"
 include: "subworkflows/WesselsSatija2023/Snakefile"
 include: "subworkflows/LiangWang2023/Snakefile"
 include: "subworkflows/LotfollahiTheis2023/Snakefile"
-include: "subworkflows/KowalskiSatijaPreprint/Snakefile"
+include: "subworkflows/CuiHacohen2023/Snakefile"
+# include: "subworkflows/KowalskiSatijaPreprint/Snakefile"
 
 ### RULES ###
 rule all:
@@ -43,12 +44,13 @@ rule all:
         rules.WesselsSatija2023.output,
         rules.LiangWang2023.output,
         rules.LotfollahiTheis2023.output,
-        rules.KowalskiSatijaPreprint.output,
+        rules.CuiHacohen2023.output,
         
         # dysfunct
         # WIP rules.McFalineTrapnell2023.output,  # screen 2 too big. OOF???
         # rules.WuBassett2023.output,  # obtained from original authors, maybe a copy is still left on my charité mac?
-        
+        # rules.KowalskiSatijaPreprint.output, # Can't install PASTA package required to open the rds files... who comes up with these stupid ideas?
+
         # deprecated
         # rules.UrsuBoehm2022.output, # does not have a control
 
