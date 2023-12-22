@@ -6,7 +6,6 @@ from tqdm import tqdm
 from statsmodels.stats.multitest import multipletests
 from sklearn.metrics import pairwise_distances
 from joblib import Parallel, delayed
-from .edistance import edist
 
 # TODO make etest allow for multiple controls (accept list of controls)
 

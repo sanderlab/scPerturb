@@ -4,10 +4,12 @@ import scanpy as sc
 
 from tqdm import tqdm
 from sklearn.metrics import pairwise_distances
+from itertools import combinations
+from joblib import Parallel, delayed
 from warnings import warn
 
 def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
-                           sample_correct=True, verbose=True):
+                           sample_correct=True, n_jobs=-1, verbose=True):
     """Average of pairwise PCA distances between cells of each group in obs_key.
     For each pair of groups defined in adata.obs[obs_key] (e.g. perturbations)
     computes all pairwise distances between cells in adata.obsm[obsm_key] (e.g. PCA space)
@@ -25,6 +27,8 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
         Distance metric to use in embedding space.
     sample_correct: `bool` (default: `True`)
         Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
+    n_jobs: `int` (default: `-1`)
+        Number of jobs to use for parallelization. If `n_jobs=1`, no parallelization is used. The default uses all available threads.
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -43,24 +47,28 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
     groups = pd.unique(y)
     df = pd.DataFrame(index=groups, columns=groups, dtype=float)
     fct = tqdm if verbose else lambda x: x
-    for i, p1 in enumerate(fct(groups)):
+    combis = list(combinations(groups, 2)) + [(x,x) for x in groups]
+    def one_step(pair):
+        p1, p2 = pair
         x1 = X[y==p1].copy()
         N = len(x1)
-        for p2 in groups[i:]:
-            x2 = X[y==p2].copy()
-            pwd = pairwise_distances(x1, x2, metric=dist)
-            M = len(x2)-1 if (p1==p2) & sample_correct else len(x2)
-            factor = N * M
-            mean_pwd = np.sum(pwd) / factor
-            df.loc[p1, p2] = mean_pwd
-            df.loc[p2, p1] = mean_pwd
+        x2 = X[y==p2].copy()
+        pwd = pairwise_distances(x1, x2, metric=dist)
+        M = len(x2)-1 if (p1==p2) & sample_correct else len(x2)
+        factor = N * M
+        mean_pwd = np.sum(pwd) / factor
+        return (p1, p2, mean_pwd)
+    res = Parallel(n_jobs=n_jobs)(delayed(one_step)(pair) for pair in fct(combis))
+    for p1, p2, val in res:
+        df.loc[p1, p2] = val
+        df.loc[p2, p1] = val
     df.index.name = obs_key
     df.columns.name = obs_key
     df.name = 'pairwise PCA distances'
     return df
 
 def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None, 
-          dist='sqeuclidean', sample_correct=True, verbose=True):
+          dist='sqeuclidean', sample_correct=True, n_jobs=1, verbose=True):
     """Computes the edistance to control. Accepts precomputed pwd.
     Computes the pairwise E-distances between all groups of cells defined in
     adata.obs[obs_key] (e.g. perturbations). Distances are computed in embedding
@@ -78,6 +86,8 @@ def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None,
         Distance metric to use in embedding space.
     sample_correct: `bool` (default: `True`)
         Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
+    n_jobs: `int` (default: `-1`)
+        Number of jobs to use for parallelization. If `n_jobs=1`, no parallelization is used. The default uses all available threads.
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -88,7 +98,7 @@ def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None,
     """
     pwd = pairwise_pca_distances(adata, obs_key=obs_key, obsm_key=obsm_key, 
                                  dist=dist, sample_correct=sample_correct, 
-                                 verbose=verbose) if pwd is None else pwd
+                                 n_jobs=n_jobs, verbose=verbose) if pwd is None else pwd
     # derive basic statistics
     sigmas = np.diag(pwd)
     deltas = pwd
@@ -96,8 +106,8 @@ def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None,
     return estats
 
 def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca', 
-                           dist='sqeuclidean', sample_correct=True, 
-                           verbose=True):
+                           dist='sqeuclidean', sample_correct=True,
+                           n_jobs=-1, verbose=True):
     """Average of pairwise PCA distances between cells of each group in obs_key with control group.
     For each group defined in adata.obs[obs_key] (e.g. perturbations)
     computes all pairwise distances between cells in adata.obsm[obsm_key] (e.g. PCA space)
@@ -117,6 +127,8 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca',
         Distance metric to use in embedding space.
     sample_correct: `bool` (default: `True`)
         Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
+    n_jobs: `int` (default: `-1`)
+        Number of jobs to use for parallelization. If `n_jobs=1`, no parallelization is used. The default uses all available threads.
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -137,19 +149,22 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca',
     
     x1 = adata[adata.obs[obs_key]==control].obsm[obsm_key].copy()
     N = len(x1)
-    for p in fct(groups):
+    def one_step(p):
         x2 = adata[adata.obs[obs_key]==p].obsm[obsm_key].copy()
         pwd = pairwise_distances(x1, x2, metric=dist)
         M = len(x2)-1 if (p==control) & sample_correct else len(x2)
         factor = N * M  # Thanks to Garrett Wong for finding this bug
         mean_pwd = np.sum(pwd) / factor
-        df.loc[p] = mean_pwd
+        return (p, mean_pwd)
+    res = Parallel(n_jobs=n_jobs)(delayed(one_step)(p) for p in fct(groups))
+    for p, val in res:
+        df.loc[p] = val
     df.index.name = obs_key
     df.name = f'PCA distances to {control}'
     return df
 
 def self_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', 
-                       sample_correct=True, verbose=True):
+                       sample_correct=True, n_jobs=-1, verbose=True):
     """Average of pairwise PCA distances between cells within each group in obs_key.
     For each group defined in adata.obs[obs_key] (e.g. perturbations)
     computes all pairwise distances between cells within in the space given by adata.obsm[obsm_key] (e.g. PCA space)
@@ -167,6 +182,8 @@ def self_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
         Distance metric to use in embedding space.
     sample_correct: `bool` (default: `True`)
         Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
+    n_jobs: `int` (default: `-1`)
+        Number of jobs to use for parallelization. If `n_jobs=1`, no parallelization is used. The default uses all available threads.
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -197,7 +214,7 @@ def self_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
 
 def edist_to_control(adata, obs_key='perturbation', control='control', 
                      obsm_key='X_pca', dist='sqeuclidean',  
-                     sample_correct=True, verbose=True):
+                     sample_correct=True, n_jobs=-1, verbose=True):
     """Computes the edistance to control.
     Computes the all E-distances between all groups of cells defined in
     adata.obs[obs_key] (e.g. perturbations) and control cells. Distances are computed in embedding
@@ -215,6 +232,8 @@ def edist_to_control(adata, obs_key='perturbation', control='control',
         Distance metric to use in embedding space.
     sample_correct: `bool` (default: `True`)
         Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
+    n_jobs: `int` (default: `-1`)
+        Number of jobs to use for parallelization. If `n_jobs=1`, no parallelization is used. The default uses all available threads.
     verbose: `bool` (default: `True`)
         Whether to show a progress bar iterating over all groups.
 
@@ -226,9 +245,11 @@ def edist_to_control(adata, obs_key='perturbation', control='control',
     deltas_to_c = onesided_pca_distances(adata, obs_key=obs_key, control=control, 
                                          obsm_key=obsm_key, dist=dist, 
                                          sample_correct=sample_correct, 
+                                         n_jobs=n_jobs,
                                          verbose=verbose)
     sigmas = self_pca_distances(adata, obs_key, obsm_key=obsm_key, dist=dist, 
-                                sample_correct=sample_correct, verbose=False)
+                                sample_correct=sample_correct, n_jobs=n_jobs,
+                                verbose=False)
     # derive basic statistics
     ed_to_c = 2 * deltas_to_c - sigmas - sigmas.loc[control]
     return ed_to_c
