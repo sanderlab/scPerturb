@@ -11,7 +11,7 @@ from .edistance import edist
 # TODO make etest allow for multiple controls (accept list of controls)
 
 def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
-          control='control', alpha=0.05, runs=1000, sample_correct=True, n_jobs=1,
+          control='control', alpha=0.05, runs=1000, sample_correct=True, n_jobs=-1,
           correction_method='holm-sidak', verbose=True):
     """Performs Monte Carlo permutation test with E-distance as test statistic.
     Tests for each group of cells defined in adata.obs[obs_key] if it is significantly
@@ -38,8 +38,8 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
         We do not recommend going lower than `100` and suggest between `100` and `10000` iterations.
     sample_correct: `bool` (default: `True`)
         Whether make the estimator for sigma more unbiased (dividing by N-1 instead of N, similar to sample and population variance).
-    n_jobs: `int` (default: `1`)
-        Number of jobs to use for parallelization. If `n_jobs=1`, no parallelization is used.
+    n_jobs: `int` (default: `-1`)
+        Number of jobs to use for parallelization. If `n_jobs=1`, no parallelization is used. The default uses all available threads.
     correction_method: `None` or any valid method for statsmodels.stats.multitest.multipletests (default: `'holm-sidak'`)
         Method used for multiple-testing correction, since we are testing each group in `adata.obs[obs_key]`.
     verbose: `bool` (default: `True`)
