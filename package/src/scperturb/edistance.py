@@ -60,7 +60,7 @@ def pairwise_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
     return df
 
 def edist(adata, obs_key='perturbation', obsm_key='X_pca', pwd=None, 
-          dist='sqeuclidean', sample_correct=0, verbose=True):
+          dist='sqeuclidean', sample_correct=True, verbose=True):
     """Computes the edistance to control. Accepts precomputed pwd.
     Computes the pairwise E-distances between all groups of cells defined in
     adata.obs[obs_key] (e.g. perturbations). Distances are computed in embedding
