@@ -119,8 +119,8 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca',
         Annotated data matrix.
     obs_key: `str` in adata.obs.keys()
         Key in adata.obs specifying the groups to consider.
-    control: `str` of a category in adata.obs[obs_key]
-        Group in obs_key for control cells.
+    control: `str` or list of `str` of categories in `adata.obs[obskey]`
+        Group(s) in obs_key for control cells.
     obsm_key: `str` in adata.obsm (default: `adata.obsm['X_pca']`)
         Key for embedding coordinates to use.
     dist: `str` for any distance in scipy.spatial.distance (default: `sqeuclidean`)
@@ -143,16 +143,17 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca',
         sc.pp.pca(adata)
 
     groups = pd.unique(adata.obs[obs_key])
-    assert control in groups, f'No cells of control group "{control}" were not found in groups defined by "{obs_key}".'
+    control = [control] if isinstance(control, str) else control
+    assert all(np.isin(control, groups)), f'No cells of control group "{control}" were not found in groups defined by "{obs_key}".'
     df = pd.DataFrame(index=groups, columns=['distance'], dtype=float)
     fct = tqdm if verbose else lambda x: x
     
-    x1 = adata[adata.obs[obs_key]==control].obsm[obsm_key].copy()
+    x1 = adata[adata.obs[obs_key].isin(control)].obsm[obsm_key].copy()
     N = len(x1)
     def one_step(p):
         x2 = adata[adata.obs[obs_key]==p].obsm[obsm_key].copy()
         pwd = pairwise_distances(x1, x2, metric=dist)
-        M = len(x2)-1 if (p==control) & sample_correct else len(x2)
+        M = len(x2)-1 if (np.isin(p, control)) & sample_correct else len(x2)
         factor = N * M  # Thanks to Garrett Wong for finding this bug
         mean_pwd = np.sum(pwd) / factor
         return (p, mean_pwd)
@@ -160,7 +161,7 @@ def onesided_pca_distances(adata, obs_key, control, obsm_key='X_pca',
     for p, val in res:
         df.loc[p] = val
     df.index.name = obs_key
-    df.name = f'PCA distances to {control}'
+    df.name = f'PCA distances to control'
     return df
 
 def self_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean', 
@@ -190,7 +191,7 @@ def self_pca_distances(adata, obs_key, obsm_key='X_pca', dist='sqeuclidean',
     Returns
     -------
     pwd: pandas.DataFrame
-        DataFrame with average PCA distances to control for all groups.
+        DataFrame with average PCA distances to self for all groups.
     """
 
     if obsm_key=='X_pca' and 'X_pca' not in adata.obsm.keys():
@@ -226,6 +227,8 @@ def edist_to_control(adata, obs_key='perturbation', control='control',
         Annotated data matrix.
     obs_key: `str` in adata.obs.keys() (default: `perturbation`)
         Key in adata.obs specifying the groups to consider.
+    control: `str` or list of `str` of categories in `adata.obs[obskey]`
+        Group(s) in obs_key for control cells.
     obsm_key: `str` in adata.obsm (default: `adata.obsm['X_pca']`)
         Key for embedding coordinates to use.
     dist: `str` for any distance in scipy.spatial.distance (default: `sqeuclidean`)
@@ -242,6 +245,7 @@ def edist_to_control(adata, obs_key='perturbation', control='control',
     ed_to_c: pandas.DataFrame
         DataFrame with E-distances between all groups and control group.
     """
+    control = [control] if isinstance(control, str) else control
     deltas_to_c = onesided_pca_distances(adata, obs_key=obs_key, control=control, 
                                          obsm_key=obsm_key, dist=dist, 
                                          sample_correct=sample_correct, 
@@ -251,5 +255,5 @@ def edist_to_control(adata, obs_key='perturbation', control='control',
                                 sample_correct=sample_correct, n_jobs=n_jobs,
                                 verbose=False)
     # derive basic statistics
-    ed_to_c = 2 * deltas_to_c - sigmas - sigmas.loc[control]
+    ed_to_c = 2 * deltas_to_c - sigmas - np.mean(sigmas.loc[control].values)
     return ed_to_c

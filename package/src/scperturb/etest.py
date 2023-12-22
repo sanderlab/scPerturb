@@ -27,8 +27,8 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
         Key for embedding coordinates to use.
     dist: `str` for any distance in scipy.spatial.distance (default: `sqeuclidean`)
         Distance metric to use in embedding space.
-    control: `str` (default: `'control'`)
-        Defines the control group in adata.obs[obs_key] to test against.
+    control: `str` or list of `str` of categories in `adata.obs[obskey]` (default: `'control'`)
+        Defines the control group(s) in adata.obs[obs_key] to test against.
     alpha: `float` between `0` and `1` (default: `0.05`)
         significance cut-off for the test to annotate significance.
     runs: `int` (default: `100`)
@@ -56,30 +56,31 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
     """
 
     groups = pd.unique(adata.obs[obs_key])
+    control = [control] if isinstance(control, str) else control
     
     # Precompute pairwise distances selectively once
     # (we need pairwise distances within each group and between each group and control)
     # Note: this could be improved further, since we compute distances within control multiple times here. Speedup likely minimal though.
     pwds = {}
     for group in groups:
-        x = adata[adata.obs[obs_key].isin([group, control])].obsm[obsm_key].copy()
+        x = adata[adata.obs[obs_key].isin([group] + control)].obsm[obsm_key].copy()
         pwd = pairwise_distances(x, x, metric=dist)
         pwds[group] = pwd
 
     # Approximate sampling from null distribution (equal distributions)
     fct = tqdm if verbose else lambda x: x  # progress bar y/n
-    M = np.sum(adata.obs[obs_key]==control)  # number of cells in control group
+    M = np.sum(adata.obs[obs_key].isin(control))  # number of cells in control group
     def one_step():
         # per perturbation, shuffle with control and compute e-distance
         df = pd.DataFrame(index=groups, columns=['edist'], dtype=float)
         for group in groups:
-            if group==control:
+            if group in control:
                 # Nothing to test here
                 df.loc[group] = [0]
                 continue
             N = np.sum(adata.obs[obs_key]==group)
             # shuffle the labels
-            labels = adata.obs[obs_key].values[adata.obs[obs_key].isin([group, control])]
+            labels = adata.obs[obs_key].values[adata.obs[obs_key].isin([group] + control)]
             shuffled_labels = np.random.permutation(labels)
 
             # use precomputed pairwise distances
@@ -103,13 +104,13 @@ def etest(adata, obs_key='perturbation', obsm_key='X_pca', dist='sqeuclidean',
     # the following is faster than the above and produces the same result
     original = []
     for group in groups:
-        if group==control:
+        if group in control:
             # Nothing to test here
             original.append(0)
             continue
         N = np.sum(adata.obs[obs_key]==group)
         # do *not* shuffle the labels
-        labels = adata.obs[obs_key].values[adata.obs[obs_key].isin([group, control])]
+        labels = adata.obs[obs_key].values[adata.obs[obs_key].isin([group] + control)]
         
         # use precomputed pairwise distances
         sc_pwd = pwds[group]  # precomputed pairwise distances between single cells
