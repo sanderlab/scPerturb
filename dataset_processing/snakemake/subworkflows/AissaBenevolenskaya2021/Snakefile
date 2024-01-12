@@ -1,0 +1,43 @@
+"""
+Author: Stefan Peidli
+Date: 23.11.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+# ### RULES ###
+rule AissaBenevolenskaya2021_download:
+    output:
+        temp(directory(TEMPDIR / 'AissaBenevolenskaya2021'))
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        mkdir -p {TEMPDIR}/AissaBenevolenskaya2021/
+        cd {TEMPDIR}/AissaBenevolenskaya2021/
+        wget -O GSE149383_RAW.tar 'http://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE149383&format=file'
+        tar -xvf GSE149383_RAW.tar
+        rm GSE149383_RAW.tar
+        gunzip *.gz
+        """
+
+rule AissaBenevolenskaya2021:
+    input: 
+        TEMPDIR / 'AissaBenevolenskaya2021'
+    output: 
+        DATADIR / 'AissaBenevolenskaya2021.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    script: 'AissaBenevolenskaya2021.py'

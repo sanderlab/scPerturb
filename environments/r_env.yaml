@@ -6,9 +6,10 @@ channels:
  - defaults
 
 dependencies:
-  - python=3.9
+  - python=3.11
   - conda-forge::r-base>=4.1
   - conda-forge::r-seurat
   - conda-forge::r-irkernel
   - conda-forge::r-optparse
+  - conda-forge::scanpy
 # You have to manually install satijalab/PASTA for the data from Kowalski et al.

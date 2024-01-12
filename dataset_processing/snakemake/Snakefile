@@ -28,6 +28,8 @@ include: "subworkflows/WesselsSatija2023/Snakefile"
 include: "subworkflows/LiangWang2023/Snakefile"
 include: "subworkflows/LotfollahiTheis2023/Snakefile"
 include: "subworkflows/CuiHacohen2023/Snakefile"
+include: "subworkflows/DixitRegev2016/Snakefile"
+include: "subworkflows/AissaBenevolenskaya2021/Snakefile"
 # include: "subworkflows/KowalskiSatijaPreprint/Snakefile"
 
 ### RULES ###
@@ -44,7 +46,11 @@ rule all:
         rules.WesselsSatija2023.output,
         rules.LiangWang2023.output,
         rules.LotfollahiTheis2023.output,
+        rules.AissaBenevolenskaya2021.output,
         rules.CuiHacohen2023.output,
+
+        # WIP
+        # rules.DixitRegev2016.output,
         
         # dysfunct
         # WIP rules.McFalineTrapnell2023.output,  # screen 2 too big. OOF???

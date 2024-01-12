@@ -40,12 +40,12 @@ print('Merging...')
 adata = sc.AnnData(X, obs, var)
 
 # Add optional data (embeddings)
-for reduction in ['pca', 'umap']:
+for reduction in ['pca', 'umap', 'tsne', 'diffmap']:
     reduction_path = path / f'{prefix}_{reduction}.csv'
     if reduction_path.exists():
         print(f'Adding {reduction}...')
-        reduction = pd.read_csv(reduction_path, index_col=0)
-        adata.obsm[f'X_{reduction}'] = reduction.values
+        reduction_data = pd.read_csv(reduction_path, index_col=0)
+        adata.obsm[f'X_{reduction}'] = reduction_data.values
 
 # write
 print('Writing...')

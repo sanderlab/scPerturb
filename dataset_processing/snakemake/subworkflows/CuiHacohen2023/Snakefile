@@ -1,6 +1,6 @@
 """
 Author: Stefan Peidli
-Date: 23.11.2023
+Date: 12.01.2023
 Run: snakemake
 """
 
@@ -12,117 +12,52 @@ DATADIR = Path(config['DOWNDIR'])  # place to store data
 TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
 
 ### SAMPLES ###
-ids = [f'0{x}' if x < 10 else str(x) for x in range(1, 46) if x != 12]  # sample 12 is missing
+celltypes = [
+    'B_cell',
+    'cDC1',
+    'cDC2',
+    'eTAC',
+    'ILC',
+    'Macrophage',
+    'MigDC',
+    'Monocyte',
+    'Neutrophil',
+    'NK_cell',
+    'pDC',
+    'T_cell_CD4',
+    'T_cell_CD8',
+    'T_cell_gd',
+    'Treg'
+]
 
 # ### RULES ###
-rule CuiHacohen2023_download:
-    output:
-        temp(expand(TEMPDIR / 'CuiHacohen2023/cytokine-{library}{x}-{mode}',
-            library=['samples', 'hashtags'], x=ids,
-            mode=['barcodes.tsv', 'features.tsv', 'matrix.mtx']
-        ))
-    resources:
-        partititon='short',
-        time='01:00:00',
-        mem_mb=8000,
-        disk_mb=8000
-    shell:
-        """
-        cd {TEMPDIR}/CuiHacohen2023
-        rm -rf *
-        wget --recursive --no-parent -nd -R "index.html*" ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE202nnn/GSE202186/suppl/
-        tar -xvf GSE202186_RAW.tar
-        rm GSE202186_RAW.tar
-        gunzip *.gz
-
-        for file in GSM*.tsv GSM*.mtx; do
-            new_name=$(echo "$file" | sed 's/^GSM[0-9]*_//')
-            mv "$file" "$new_name"
-        done
-        """
-
-rule CuiHacohen2023_demux:
+# You will manually have to download the rds files.
+# Cannot be automatized due to JavaScript on the website.
+rule CuiHacohen2023_extract:
     input:
-        sample_mtx = TEMPDIR / 'CuiHacohen2023/cytokine-samples{x}-matrix.mtx',
-        sample_barcodes = TEMPDIR / 'CuiHacohen2023/cytokine-samples{x}-barcodes.tsv',
-        sample_features = TEMPDIR / 'CuiHacohen2023/cytokine-samples{x}-features.tsv',
-        tags_mtx = TEMPDIR / 'CuiHacohen2023/cytokine-hashtags{x}-matrix.mtx',
-        tags_barcodes = TEMPDIR / 'CuiHacohen2023/cytokine-hashtags{x}-barcodes.tsv',
-        tags_features = TEMPDIR / 'CuiHacohen2023/cytokine-hashtags{x}-features.tsv',
+        TEMPDIR / 'CuiHacohen2023/ref_data_{celltype}.RDS'
     output:
-        demux = TEMPDIR / 'CuiHacohen2023/samples{x}-demux.csv',
-    conda: 'r_env'
+        temp(TEMPDIR / 'CuiHacohen2023/{celltype}_temp.h5ad')
+    conda: 'r_env' # '../../../../environments/r_env.yaml'
     resources:
         partititon='short',
         time='04:00:00',
-        mem_mb=16000,
-        disk_mb=16000
-    script: 'CuiHacohen2023_demux.R'
-
-rule CuiHacohen2023_annotate:
-    input:
-        sample_mtx = TEMPDIR / 'CuiHacohen2023/cytokine-samples{x}-matrix.mtx',
-        sample_barcodes = TEMPDIR / 'CuiHacohen2023/cytokine-samples{x}-barcodes.tsv',
-        sample_features = TEMPDIR / 'CuiHacohen2023/cytokine-samples{x}-features.tsv',
-        demux = TEMPDIR / 'CuiHacohen2023/samples{x}-demux.csv',
-        sample_mapping = TEMPDIR / 'CuiHacohen2023/GSE202186_map-scRNAseq-cytokines-dictionary.xlsx'
-    output:
-        temp(TEMPDIR / 'CuiHacohen2023/samples{x}_temp_annotated.h5ad')
-    resources:
-        partititon='medium',
-        time='08:00:00',
-        mem_mb=32000,
-        disk_mb=32000
-    run:
-        import pandas as pd
-        import scanpy as sc
-        from scipy.sparse import csr_matrix
-        from scipy.io import mmread
-
-        idx = wildcards.x
-        sample_mapping = pd.read_excel(input.sample_mapping)
-
-        # read
-        X = csr_matrix(mmread(input.sample_mtx)).T
-        obs = pd.read_csv(input.sample_barcodes, sep='\t', index_col=0, names=['cell_barcode'])
-        var = pd.read_csv(input.sample_features, sep='\t', index_col=1, names=['ensembl_id', 'gene_symbol', 'feature_type'])
-
-        # build
-        adata = sc.AnnData(X, obs, var)
-        adata.var_names_make_unique()
-        adata.obs_names = [x.replace('-1', '') for x in adata.obs_names]
-
-        # add demultiplexing
-        demux = pd.read_csv(input.demux, index_col=0)
-        demux = demux[~demux.MULTI_ID.isin(['Negative', 'Doublet', 'unmapped'])].copy()
-        demux['hashtag_ID'] = [x[4] for x in demux.MULTI_ID]
-        demux.drop(['orig.ident', 'MULTI_classification', 'MULTI_ID'], axis=1, inplace=True)
-        obs_ = pd.merge(adata.obs, demux, left_index=True, right_index=True, how='inner')
-        adata = adata[obs_.index].copy()
-        adata.obs=obs_
-
-        # annotate
-        sample_mapping.hashtag_ID = sample_mapping.hashtag_ID.astype(str)
-        adata.obs['filename_prefix'] = f'cytokine-samples{idx}'
-        adata.obs['cell_barcode'] = adata.obs.index
-        adata.obs = pd.merge(adata.obs, sample_mapping, 
-                             left_on=['filename_prefix', 'hashtag_ID'], 
-                             right_on=['filename_prefix', 'hashtag_ID'], 
-                             how='left'
-                             ).set_index('cell_barcode')
-        adata.obs_names = [f'{x}-{idx}' for x in adata.obs_names]
-
-        # write
-        adata.write_h5ad(output[0])
+        mem_mb=128000,
+        disk_mb=64000
+    shell:
+        """
+        Rscript ../utils/extract.R -f {input} -n {wildcards.celltype} -o $(dirname {output[0]})
+        python ../utils/merge_from_extract.py -i $(dirname {input[0]}) -o {output} -n {wildcards.celltype}
+        """
 
 rule CuiHacohen2023:
     input: 
-        expand(TEMPDIR / 'CuiHacohen2023/samples{x}_temp_annotated.h5ad', x=ids)
-    output: 
+        expand(TEMPDIR / 'CuiHacohen2023/{celltype}_temp.h5ad', celltype=celltypes)
+    output:
         DATADIR / 'CuiHacohen2023.h5ad'
     resources:
         partititon='short',
         time='04:00:00',
-        mem_mb=64000,
+        mem_mb=128000,
         disk_mb=64000
     script: 'CuiHacohen2023.py'
