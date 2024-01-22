@@ -3,10 +3,10 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/sanderlab/scperturb)
 
 # scPerturb: A resource and a python tool for single-cell perturbation data
-doi:[10.1101/2022.08.20.504663](https://doi.org/10.1101/2022.08.20.504663)
+For the publication see: [Peidli, S., Green, T.D., et al. Nature Methods (2024)](https://www.nature.com/articles/s41592-023-02144-y).
 
 ## Where to find the data
-The datasets are available to download on [scperturb.org](https://scperturb.org/) (where you can also find a table of all included datasets) and alternatively on Zenodo:
+The datasets are available to download on [scperturb.org](https://scperturb.org/) (where you can also find an [interactive table](http://projects.sanderlab.org/scperturb/datavzrd/scPerturb_vzrd_v1/dataset_info/index_1.html) of all included datasets) and alternatively on Zenodo, depending on the modality you are interested in:
 - [RNA data](https://zenodo.org/record/7041849)
 - [ATAC data](https://zenodo.org/record/7058382)
 
@@ -44,7 +44,8 @@ Install using:
 install.packages('scperturbR')
 ```
 
-## Instructions to run the code to recreate the manuscript figures
+## Reproducibility
+Instructions to run the code to reproduce the figures and tables in the paper and supplement:
 - install conda if necessary (also check out mamba, it's way faster)
 - run "conda env create -f sc_env.yaml" to create a new conda environment with all the necessary packages to run the code (**you will need this**)
 - activate the environment with "conda activate sc_env"
