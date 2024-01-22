@@ -1,7 +1,7 @@
 """
 Author: Stefan Peidli
 Aim: Snakemake workflow for downloading and processing scperturb data.
-Date: 07.01.2023
+Date: 12.01.2024
 Run: snakemake
 Create DAG: snakemake --forceall --dag | dot -Tpdf > snake_dag.pdf
 Create Rulegraph: snakemake --forceall --rulegraph | dot -Tpdf > snake_rulegraph.pdf
@@ -50,11 +50,11 @@ rule all:
         rules.CuiHacohen2023.output,
 
         # WIP
-        # rules.DixitRegev2016.output,
+        rules.DixitRegev2016.output,
         
         # dysfunct
         # WIP rules.McFalineTrapnell2023.output,  # screen 2 too big. OOF???
-        # rules.WuBassett2023.output,  # obtained from original authors, maybe a copy is still left on my charité mac?
+        # rules.WuBassett2023.output,  # obtained from original authors, maybe a copy is still left on my charité mac? Redo???
         # rules.KowalskiSatijaPreprint.output, # Can't install PASTA package required to open the rds files... who comes up with these stupid ideas?
 
         # deprecated
