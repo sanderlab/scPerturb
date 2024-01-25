@@ -1,0 +1,57 @@
+"""
+Author: Stefan Peidli
+Date: 23.11.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+experiments = ['GSM2396858_k562_tfs_7', 'GSM2396859_k562_tfs_13', 'GSM2396860_k562_tfs_highmoi']
+
+### RULES ###
+rule DixitRegev2016_download:
+    output:
+        directory(TEMPDIR / 'DixitRegev2016')
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        mkdir -p {TEMPDIR}/DixitRegev2016/
+        cd {TEMPDIR}/DixitRegev2016/
+        wget --recursive --no-parent -nd -R "index.html*" ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE90nnn/GSE90063/suppl/
+        tar -xvf GSE90063_RAW.tar
+        rm GSE90063_RAW.tar
+        gunzip *.gz
+        """
+
+rule DixitRegev2016_sub:
+    input: 
+        TEMPDIR / 'DixitRegev2016'
+    output: 
+        TEMPDIR / 'DixitRegev2016/temp_DixitRegev2016_{name}.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    script: 'DixitRegev2016_sub.py'
+
+rule DixitRegev2016:
+    input:
+        expand(TEMPDIR / 'DixitRegev2016/temp_DixitRegev2016_{name}.h5ad', name=experiments)
+    output:
+        DATADIR / 'DixitRegev2016.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    script: 'DixitRegev2016.py'

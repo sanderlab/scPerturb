@@ -1,0 +1,42 @@
+"""
+Author: Stefan Peidli
+Date: 23.11.2023
+Run: snakemake
+"""
+
+from pathlib import Path
+configfile: "../../configuration/config.yaml"
+
+### PATHS ###
+DATADIR = Path(config['DOWNDIR'])  # place to store data
+TEMPDIR = Path(config['TEMPDIR'])  # place to store temporary files (huge files)
+
+# ### RULES ###
+rule ZapateroTape2023_download:
+    output:
+        temp(directory(TEMPDIR / 'ZapateroTape2023'))
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    shell:
+        """
+        mkdir -p {TEMPDIR}/ZapateroTape2023/
+        cd {TEMPDIR}/ZapateroTape2023/
+        # wget https://zenodo.org/records/8177571/files/merged_filtered_trellis_adata_v4.h5ad
+        wget https://data.mendeley.com/public-files/datasets/hc8gxwks3p/files/49516462-80c3-4952-af91-ee8e61421848/file_downloaded -O Metadata_PDO_CAF_screening.zip
+        unzip Metadata_PDO_CAF_screening.zip
+        """
+
+rule ZapateroTape2023:
+    input: 
+        TEMPDIR / 'ZapateroTape2023'
+    output: 
+        DATADIR / 'ZapateroTape2023.h5ad'
+    resources:
+        partititon='short',
+        time='04:00:00',
+        mem_mb=64000,
+        disk_mb=64000
+    script: 'ZapateroTape2023.py'
