@@ -20,7 +20,8 @@ rule JoungZhang2023:
 rule JoungZhang2023_download:
     output:
         combinatorial = temp(TEMPDIR / 'JoungZhang2023/GSE217066_210715_combinatorial.h5ad'),
-        atlas = temp(TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad')
+        atlas = temp(TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad'),
+        annotation=temp(TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas_S01-S04.csv')
     resources:
         partititon='short',
         time='04:00:00',
@@ -31,12 +32,14 @@ rule JoungZhang2023_download:
         cd {TEMPDIR}/JoungZhang2023
         wget -O GSE217066_210715_combinatorial.h5ad.gz https://ftp.ncbi.nlm.nih.gov/geo/series/GSE217nnn/GSE217066/suppl/GSE217066_210715_combinatorial.h5ad.gz
         wget -O GSE217460_210322_TFAtlas.h5ad.gz https://ftp.ncbi.nlm.nih.gov/geo/series/GSE217nnn/GSE217460/suppl/GSE217460_210322_TFAtlas.h5ad.gz
+        wget https://ftp.ncbi.nlm.nih.gov/geo/series/GSE217nnn/GSE217460/suppl/GSE217460%5F210322%5FTFAtlas%5FS01%2DS04.csv.gz
         gunzip *.gz
         """
 
 rule JoungZhang2023_atlas:
     input:
-        atlas = TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad'
+        atlas = TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas.h5ad',
+        annotation=TEMPDIR / 'JoungZhang2023/GSE217460_210322_TFAtlas_S01-S04.csv'
     output:
         atlas = DATADIR / 'JoungZhang2023_atlas.h5ad'
     resources:
