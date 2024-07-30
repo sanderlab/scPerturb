@@ -40,7 +40,6 @@ def process_ReplogleWeissman2022(DIR= 'ReplogleWeissman2022/', WDIR="processed/"
             adata.obs["cell_line"] = "hTERT-RPE1"
             adata.obs["sex"]="Female"
             adata.obs["age"] = 1
-            adata.obs["celltype"]
 
         adata.obs["perturbation"] = adata.obs['gene']
         adata.obs["organism"] = "human"
