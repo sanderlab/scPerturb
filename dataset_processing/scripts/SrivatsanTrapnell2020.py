@@ -3,24 +3,20 @@ import pandas as pd
 import os
 import sys
 import numpy as np
-import gzip
-import matplotlib.pyplot as pl
-import re
 
-from scipy.io import mmread
+
 from scipy.sparse import csr_matrix
 from tqdm import tqdm
 
 from process_supp import *
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../')))
-from utils import write_as_singles, read_from_singles, annotate_qc, assert_annotations
 
 import yaml
-config = yaml.safe_load(open("../../config.yaml", "r"))
+config = yaml.safe_load(open("config.yaml", "r"))
 DIR = config['DIR']
 WDIR = config['WDIR']
 
-path = DIR + 'GSE139944/supp/'
+path = DIR + 'GSE139944/'
 folders = get_subfolders(path, False)
 def prepare(folder):
     files = get_files(path+folder, False)
@@ -44,8 +40,7 @@ def prepare(folder):
 # sciplex1 is just a species mixing experiment and hence irrelevant
 
 # sciplex2
-folder= 'Supp_GSM4150377_sciPlex2_A549_Transcription_Modulators'
-dataset = folder.replace('Supp_', '')
+folder= 'GSM4150377_A549_Transcription_Modulators'
 adata = prepare(folder)
 
 adata.obs = adata.obs.drop(['Cell', 'sample', 'Size_Factor'], axis=1)
@@ -69,12 +64,11 @@ adata.var_names_make_unique()
 adata.write(WDIR+'SrivatsanTrapnell2020_sciplex2.h5')
 
 # sciplex3
-folder= 'Supp_GSM4150378_sciPlex3_A549_MCF7_K562_screen'
-dataset = folder.replace('Supp_', '')
+folder= 'GSM4150378_sciPlex3_A549_MCF7_K562_screen'
 # adata = prepare(folder)
 files = get_files(path+folder, False)
 gene_annotations = [x for x in files if 'gene.annotations' in x][0]
-var = pd.read_csv(path+folder+'/'+gene_annotations, sep='\t', header=None, names=['gene_id', 'gene_name']).set_index('gene_name')
+var = pd.read_csv(path+folder+'/'+gene_annotations, sep=' ', header=0, names=['gene_id', 'gene_name']).set_index('gene_name')
 # obs = pd.read_csv(path+folder+'/'+folder[5:]+'_cell.annotations.txt.gz', sep='\t', header=None)  # no additional info here?
 metadata = [x for x in files if 'pData' in x][0]
 obs2 = pd.read_csv(path+folder+'/'+metadata, sep=' ')
@@ -96,7 +90,7 @@ adata.obs = adata.obs.rename({'n.umi': 'ncounts', 'well_oligo': 'well', 'plate_o
                   'cell_type': 'cell_line', 'time_point': 'time', 'dose': 'dose_value',
                   'product_name' : 'perturbation'}, axis=1)
 adata.obs['dose_unit']='nM'  # I guess this is in nanomolar since doses are 10 nM, 100 nM, 1 μM, and 10 μM
-adata.obs.perturbation[adata.obs.perturbation == 'Vehicle']='control'
+adata.obs.loc[adata.obs.perturbation == 'Vehicle','perturbation']='control'
 adata.obs['celltype'] = ['alveolar basal epithelial cells' if line=='A549'
                        else 'mammary epithelial cells' if line=='MCF7'
                        else 'lymphoblasts' if line=='K562'
@@ -112,8 +106,7 @@ adata.obs['perturbation_type'] = 'drug'
 adata.write(WDIR+'SrivatsanTrapnell2020_sciplex3.h5')
 
 # sciplex4
-folder= 'Supp_GSM4150379_sciPlex4_A549_MCF7_HDACi'
-dataset = folder.replace('Supp_', '')
+folder= 'GSM4150379_sciPlex4_A549_MCF7_HDACi'
 adata = prepare(folder)
 
 dataset = folder.replace('Supp_', '')
