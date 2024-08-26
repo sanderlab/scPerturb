@@ -6,8 +6,8 @@
 For the publication see: [Peidli, S., Green, T.D., et al. Nature Methods (2024)](https://www.nature.com/articles/s41592-023-02144-y).
 
 ## Where to find the data
-The datasets are available to download on [scperturb.org](https://scperturb.org/) (where you can also find an [interactive table](http://projects.sanderlab.org/scperturb/datavzrd/scPerturb_vzrd_v1/dataset_info/index_1.html) of all included datasets) and alternatively on Zenodo, depending on the modality you are interested in:
-- [RNA data](https://zenodo.org/record/7041849)
+The datasets are available to download on [scperturb.org](https://scperturb.org/) (where you can also find an [interactive table](http://projects.sanderlab.org/scperturb/datavzrd/scPerturb_vzrd_v1/dataset_info/index_1.html) of all included datasets). The latest versions are available in full on Zenodo, depending on the modality you are interested in:
+- [RNA data](https://zenodo.org/records/13350497)
 - [ATAC data](https://zenodo.org/record/7058382)
 
 ## scperturb for python (integrates with scanpy)
