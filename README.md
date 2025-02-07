@@ -15,6 +15,8 @@ The datasets are available to download on [scperturb.org](https://scperturb.org/
 
 A python package to compute E-distances in single-cell perturbation data and perform E-tests.
 
+Please note that maintenance on the scperturb Python package is relatively slow. We have recreated Python functionality in [pertpy](https://github.com/scverse/pertpy) which has a larger base of support and also includes fast calculation of alternative distance metrics and tests. 
+
 ### Install
 Just install via pip:
 
