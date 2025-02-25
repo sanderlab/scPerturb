@@ -10,6 +10,8 @@ The datasets are available to download on [scperturb.org](https://scperturb.org/
 - [RNA data](https://zenodo.org/records/13350497)
 - [ATAC data](https://zenodo.org/record/7058382)
 
+Most datasets are also downloadable via [pertpy](https://github.com/scverse/pertpy) or [Lamin](https://lamin.ai/laminlabs/pertdata).
+
 ## scperturb for python (integrates with scanpy)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/scperturb?label=PyPI%20downloads)
 
